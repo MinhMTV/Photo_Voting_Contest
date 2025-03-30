@@ -29,8 +29,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS votes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             image_id INTEGER,
-            voter_ip TEXT,
-            UNIQUE(image_id, voter_ip)
+            voter_session_id TEXT,  -- Neue Spalte für die Session-ID
+            UNIQUE(image_id, voter_session_id)
         );
     ''')
 
