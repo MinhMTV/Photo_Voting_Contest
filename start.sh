@@ -3,11 +3,12 @@
 echo "📦 Starte Setup..."
 
 # Git Pull (nur wenn .git vorhanden ist)
-if [ -d .git ]; then
-    echo "🔄 Aktualisiere Projekt via git pull..."
-    git pull
+if [ ! -f run.py ]; then
+  echo "📥 Klone Projekt aus GitHub..."
+  git clone https://github.com/MinhMTV/Photo_Voting_Contest.git .;
 else
-    echo "⚠️ Kein .git-Verzeichnis gefunden, git pull übersprungen."
+  echo "🔄 Führe Git Pull aus..."
+  git pull
 fi
 
 # .env Datei anlegen, wenn nicht vorhanden
