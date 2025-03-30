@@ -8,7 +8,8 @@ COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Projektcode & Start-Skript kopieren
-COPY . .  # Hier wird das gesamte Projekt ins Arbeitsverzeichnis kopiert, also auch start.sh
+COPY . .
+# Hier wird das gesamte Projekt ins Arbeitsverzeichnis kopiert, also auch start.sh
 
 # Stelle sicher, dass das start.sh-Skript ausführbar ist
 RUN chmod +x /usr/src/app/start.sh  # Hier wird das Skript ausführbar gemacht
