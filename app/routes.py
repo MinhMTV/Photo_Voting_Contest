@@ -13,25 +13,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def get_voter_ip():
-    # Versuche, die voter_session_id aus dem Cookie zu bekommen
-    voter_session_id = request.cookies.get('voter_session_id')
-
-    # Wenn noch kein Cookie gesetzt wurde, erstellen wir eine neue ID
-    if not voter_session_id:
-        # Erstelle eine neue eindeutige ID, wenn der Benutzer noch nicht identifiziert wurde
-        voter_session_id = str(uuid.uuid4())
-
-        # Setze den Cookie für den Benutzer (Gültig für 1 Jahr)
-        response = jsonify(success=True)  # Erstelle eine Antwort
-        response.set_cookie('voter_session_id', voter_session_id, max_age=365*24*60*60)  # Setze das Cookie
-        print(f"Cookies values {request.cookies}")
-        # Gib die Antwort zurück, die den Cookie gesetzt hat
-        return voter_session_id  # Rückgabe nur der ID
-
-    # Wenn der Cookie schon existiert, einfach die ID zurückgeben
-    return voter_session_id
-
 # === Startseite / Galerie ===
 @bp.route('/')
 def index():
