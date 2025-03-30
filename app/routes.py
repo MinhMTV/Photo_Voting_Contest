@@ -14,15 +14,15 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_voter_ip():
-    # Holen der voter_session_id aus dem Cookie
     voter_session_id = request.cookies.get('voter_session_id')
     if not voter_session_id:
         # Erstelle eine neue eindeutige ID, wenn der Benutzer noch nicht identifiziert wurde
         voter_session_id = str(uuid.uuid4())
+        # Setze das Cookie für den Benutzer
         response = jsonify(success=True)
         response.set_cookie('voter_session_id', voter_session_id, max_age=365*24*60*60)  # Gültig für ein Jahr
-        return response
-    return voter_session_id
+        return voter_session_id  # Gebe die ID direkt zurück, ohne eine Response zu erstellen
+    return voter_session_id  # Gebe die bestehende ID zurück
 
 # === Startseite / Galerie ===
 @bp.route('/')
@@ -31,7 +31,7 @@ def index():
     images = db.execute('SELECT * FROM images WHERE visible = 1 ORDER BY uploaded_at DESC').fetchall()
     voter_ip = get_voter_ip()
 
-    voted = db.execute('SELECT image_id FROM votes WHERE voter_ip = ?', (voter_ip,)).fetchall()
+    voted = db.execute('SELECT image_id FROM votes WHERE voter_session_id = ?', (voter_ip,)).fetchall()
     voted_ids = [row['image_id'] for row in voted]
     votes_left = max(0, 3 - len(voted_ids))  # max. 3 Stimmen
 
