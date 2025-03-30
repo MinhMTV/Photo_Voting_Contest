@@ -2,6 +2,9 @@
 
 echo "📦 Starte Setup..."
 
+pwd
+ls -la
+
 # Überprüfen, ob das Projektverzeichnis existiert, wenn nicht, aus GitHub klonen
 if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
@@ -9,9 +12,6 @@ if [ ! -d .git ]; then
   git clone https://github.com/MinhMTV/Photo_Voting_Contest.git
 else
   echo "🔄 Führe Git Pull aus..."
-  # Sicherstellen, dass der lokale Branch mit dem Remote-Branch verbunden ist
-  git checkout main || git checkout -b main
-  git branch --set-upstream-to=origin/main main || echo "⚠️ Fehler beim Setzen des Remote-Tracking-Branches"
   git pull || echo "⚠️ Git Pull fehlgeschlagen"
 fi
 
