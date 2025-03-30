@@ -84,7 +84,7 @@ def vote(image_id):
         'SELECT COUNT(*) FROM votes WHERE voter_session_id = ?',
         (voter_session_id,)
     ).fetchone()[0]
-
+    print("test")
     return jsonify(success=True, vote_count=updated_vote_count)
 
 
