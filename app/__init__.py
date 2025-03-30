@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
+    # Eigene .flask_env statt .env laden
+    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.flask_env'))
+
     app.config.from_mapping(
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "admin123"),
         SECRET_KEY=os.getenv("SECRET_KEY", "dev123"),
