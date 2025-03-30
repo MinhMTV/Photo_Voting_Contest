@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y nano git curl
 # Klone das Git-Repository
 RUN git clone https://github.com/MinhMTV/Photo_Voting_Contest.git /app
 
+# Setze Git so, dass es keine Dateimodus-Änderungen verfolgt
+RUN git config core.fileMode false
+
 # Abhängigkeiten installieren
 COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
