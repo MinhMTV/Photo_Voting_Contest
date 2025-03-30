@@ -9,10 +9,12 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Projektcode & Start-Skript
 COPY . .
-RUN chmod +x start.sh
+
+# Stelle sicher, dass das start.sh-Skript ausführbar ist
+RUN chmod +x /usr/src/app/start.sh
 
 # Nano + Git (optional)
 RUN apt-get update && apt-get install -y nano git
 
 # Starte per Script
-CMD ["./start.sh"]
+CMD ["/usr/src/app/start.sh"]
