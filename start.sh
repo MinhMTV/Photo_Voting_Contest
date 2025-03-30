@@ -2,26 +2,26 @@
 
 echo "📦 Starte Setup..."
 
-# Git Pull (nur wenn .git vorhanden ist)
-if [ ! -f run.py ]; then
+if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
+  rm -rf * && \
   git clone https://github.com/MinhMTV/Photo_Voting_Contest.git .;
 else
   echo "🔄 Führe Git Pull aus..."
   git pull
 fi
 
-# .env Datei anlegen, wenn nicht vorhanden
 if [ ! -f .env ]; then
   echo "📝 Erstelle .env Datei mit Platzhaltern..."
-  echo 'FLASK_APP=run.py' > .env
-  echo 'FLASK_ENV=production' >> .env
-  echo 'FLASK_RUN_HOST=0.0.0.0' >> .env
-  echo 'FLASK_RUN_PORT=5050' >> .env
-  echo 'ADMIN_PASSWORD=changeme' >> .env
-  echo 'SECRET_KEY=changeme' >> .env
+  cat <<EOF > .env
+FLASK_APP=run.py
+FLASK_ENV=production
+FLASK_RUN_HOST=0.0.0.0
+FLASK_RUN_PORT=5050
+ADMIN_PASSWORD=changeme
+SECRET_KEY=changeme
+EOF
 fi
 
-# Flask starten
 echo "🚀 Starte Flask-App..."
-flask run --host=0.0.0.0 --port=5050
+python3 -m flask run --host=0.0.0.0 --port=5050
