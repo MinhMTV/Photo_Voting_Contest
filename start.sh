@@ -6,7 +6,7 @@ echo "📦 Starte Setup..."
 if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
   # Entferne alle Dateien und klone das Projekt neu (falls erforderlich)
-  git clone https://github.com/MinhMTV/Photo_Voting_Contest.git . || exit 1
+  git clone https://github.com/MinhMTV/Photo_Voting_Contest.git
 else
   echo "🔄 Führe Git Pull aus..."
   git pull || echo "⚠️ Git Pull fehlgeschlagen"

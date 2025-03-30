@@ -13,4 +13,4 @@ COPY . .
 RUN chmod +x /usr/src/app/start.sh
 
 # Starten per Skript
-CMD ["/usr/src/app/start.sh"]
+CMD ["/start.sh"]
