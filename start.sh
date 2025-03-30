@@ -5,7 +5,7 @@ echo "📦 Starte Setup..."
 # Überprüfen, ob das Projektverzeichnis existiert, wenn nicht, aus GitHub klonen
 if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
-  #rm -rf .[^.]* *  # löscht ALLE Dateien inkl. .git, .env, .flaskenv etc.
+  # Entferne alle Dateien und klone das Projekt neu (falls erforderlich)
   git clone https://github.com/MinhMTV/Photo_Voting_Contest.git . || exit 1
 else
   echo "🔄 Führe Git Pull aus..."
@@ -27,5 +27,22 @@ else
   echo "✅ .env Datei existiert – wird nicht überschrieben."
 fi
 
+# Sicherstellen, dass die notwendigen Systempakete und Abhängigkeiten vorhanden sind
+echo "📦 Installiere System-Abhängigkeiten..."
+apt-get update && apt-get install -y nano git curl
+
+# Stelle sicher, dass alle Python-Abhängigkeiten installiert sind
+if [ -f "requirements.txt" ]; then
+  echo "📦 Installiere Python-Abhängigkeiten..."
+  pip install --no-cache-dir -r requirements.txt
+else
+  echo "⚠️ Keine requirements.txt gefunden!"
+fi
+
+# 🎭 Playwright-Browser installieren
+echo "📦 Installiere Playwright-Browser..."
+playwright install --with-deps
+
+# 🧠 Starte Flask-App
 echo "🚀 Starte Flask-App..."
 python3 -m flask run --host=0.0.0.0 --port=5050
