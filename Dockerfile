@@ -1,15 +1,13 @@
 FROM python:3.12
 
-# Arbeitsverzeichnis festlegen
-WORKDIR /app
-
 # Systemabhängigkeiten und git installieren
 RUN apt-get update && apt-get install -y nano git curl
 
-# Projektcode & Start-Skript kopieren
-COPY . .
+# Arbeitsverzeichnis
+WORKDIR /app
 
-# Stelle sicher, dass das start.sh-Skript ausführbar ist
+# Start-Skript kopieren
+COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Starten per Skript
