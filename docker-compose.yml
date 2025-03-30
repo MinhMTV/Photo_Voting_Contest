@@ -1,9 +1,15 @@
 version: '3.8'
 
 services:
-  web:
+  photo_contest:  # Ändere den Service-Namen von 'web' zu 'photo_contest'
     build: .
     container_name: photo_voting_app
     restart: unless-stopped
     ports:
       - "5050:5050"
+    networks:
+      - wp_net  # <- hier hinzufügen
+
+networks:
+  wp_net:
+    external: true
