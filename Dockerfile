@@ -9,9 +9,15 @@ RUN rm -rf /app/* /app/.git
 # Installiere notwendige Systempakete
 RUN apt-get update && apt-get install -y nano git curl
 
-# Start-Skript kopieren
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# Klone das Git-Repository
+RUN git clone https://github.com/MinhMTV/Photo_Voting_Contest.git /app
+
+# Setze die notwendigen Berechtigungen für start.sh
+RUN chmod +x /app/start.sh
+
+# Abhängigkeiten installieren
+COPY requirements.txt ./
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Starten per Skript
 CMD ["/app/start.sh"]
