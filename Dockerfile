@@ -8,14 +8,13 @@ COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Projektcode & Start-Skript kopieren
-COPY . .
-# Kopiert das komplette Verzeichnis ins Arbeitsverzeichnis des Containers
+COPY . .  # Hier wird das gesamte Projekt ins Arbeitsverzeichnis kopiert, also auch start.sh
 
 # Stelle sicher, dass das start.sh-Skript ausführbar ist
-RUN chmod +x /usr/src/app/start.sh  # Achtung, es muss auf den richtigen Pfad verweisen
+RUN chmod +x /usr/src/app/start.sh  # Hier wird das Skript ausführbar gemacht
 
 # Nano + Git (optional)
 RUN apt-get update && apt-get install -y nano git
 
 # Starte per Skript
-CMD ["/usr/src/app/start.sh"]  # Ändere den Pfad hier, um das Skript korrekt auszuführen
+CMD ["/usr/src/app/start.sh"]  # Hier wird das Skript korrekt ausgeführt

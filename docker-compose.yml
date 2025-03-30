@@ -7,11 +7,12 @@ services:
     restart: unless-stopped
     ports:
       - "5050:5050"
-    volumes:
-      - ./app:/usr/src/app  # Hier sicherstellen, dass das Verzeichnis korrekt gemountet wird.
-    working_dir: /usr/src/app  # Stelle sicher, dass dies dem Arbeitsverzeichnis entspricht
+    working_dir: /usr/src/app  # Hier wird das Arbeitsverzeichnis gesetzt
     environment:
       - FLASK_APP=run.py
       - FLASK_RUN_HOST=0.0.0.0
       - FLASK_RUN_PORT=5050
-    command: /bin/bash -c "./start.sh"
+    # Vermeide das Volume-Mount für das Projektverzeichnis, wenn du den gesamten Code im Dockerfile kopierst
+    # volumes:
+    #   - ./app:/usr/src/app  # Falls du das brauchst, musst du sicherstellen, dass die Struktur korrekt ist
+    command: /bin/bash -c "./start.sh"  # Startet das Skript aus dem richtigen Pfad

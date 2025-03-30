@@ -2,6 +2,7 @@
 
 echo "📦 Starte Setup..."
 
+# Überprüfen, ob das Projektverzeichnis existiert, wenn nicht, aus GitHub klonen
 if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
   rm -rf .[^.]* *  # löscht ALLE Dateien inkl. .git, .env, .flaskenv etc.
@@ -11,6 +12,7 @@ else
   git pull || echo "⚠️ Git Pull fehlgeschlagen"
 fi
 
+# Wenn .env nicht existiert, wird sie erstellt
 if [ ! -f .env ]; then
   echo "📝 Erstelle .env Datei mit Platzhaltern..."
   cat <<EOF > .env
