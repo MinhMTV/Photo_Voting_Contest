@@ -8,19 +8,17 @@ services:
     ports:
       - "5050:5050"
     working_dir: /usr/src/app
-    volumes:
-      - ./app:/usr/src/app
-      - ./env/.env:/usr/src/app/.env
     environment:
       - FLASK_APP=run.py
       - FLASK_RUN_HOST=0.0.0.0
       - FLASK_RUN_PORT=5050
     command: |
       /bin/bash -c "
-      if [ ! -d .git ]; then
-        git clone https://github.com/MinhMTV/Photo_Voting_Contest.git .;
+      if [ ! -f run.py ]; then
+        echo '📥 Klone Projekt aus GitHub...';
+        git clone https://github.com/MinhMTV/Photo_Voting_Contest.git /tmp/project &&
+        cp -r /tmp/project/* /usr/src/app/
       fi &&
-      git pull &&
 
       if [ ! -f .env ]; then
         echo 'FLASK_APP=run.py' > .env &&
