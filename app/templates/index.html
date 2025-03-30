@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Lade die bereits abgegebenen Stimmen aus dem localStorage
     const votedImages = JSON.parse(localStorage.getItem('votedImages')) || [];
-    const voterSessionId = localStorage.getItem('voter_session_id') || uuidv4(); // Generiere eine neue ID, wenn nicht vorhanden
+    const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4(); // Verwende uuid.v4() statt uuidv4()// Generiere eine neue ID, wenn nicht vorhanden
     localStorage.setItem('voter_session_id', voterSessionId);
 
     // Update der UI basierend auf den abgegebenen Votes
