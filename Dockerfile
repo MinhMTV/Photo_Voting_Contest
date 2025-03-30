@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y nano git curl
 # Klone das Git-Repository
 RUN git clone https://github.com/MinhMTV/Photo_Voting_Contest.git /app
 
-# Setze die notwendigen Berechtigungen für start.sh
-RUN chmod +x /app/start.sh
+## Setze die notwendigen Berechtigungen für start.sh
+#RUN chmod +x /app/start.sh
 
 # Abhängigkeiten installieren
 COPY requirements.txt ./
