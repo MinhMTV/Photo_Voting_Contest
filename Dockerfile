@@ -1,21 +1,16 @@
 FROM python:3.12
 
-# Arbeitsverzeichnis
+# Arbeitsverzeichnis festlegen
 WORKDIR /usr/src/app
 
-# Abhängigkeiten
-COPY requirements.txt ./
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Systemabhängigkeiten und git installieren
+RUN apt-get update && apt-get install -y nano git curl
 
 # Projektcode & Start-Skript kopieren
 COPY . .
-# Hier wird das gesamte Projekt ins Arbeitsverzeichnis kopiert, also auch start.sh
 
 # Stelle sicher, dass das start.sh-Skript ausführbar ist
-RUN chmod +x /usr/src/app/start.sh  # Hier wird das Skript ausführbar gemacht
+RUN chmod +x /usr/src/app/start.sh
 
-# Nano + Git (optional)
-RUN apt-get update && apt-get install -y nano git
-
-# Starte per Skript
-CMD ["/usr/src/app/start.sh"]  # Hier wird das Skript korrekt ausgeführt
+# Starten per Skript
+CMD ["/usr/src/app/start.sh"]
