@@ -39,10 +39,6 @@ else
   echo "⚠️ Keine requirements.txt gefunden!"
 fi
 
-# 🎭 Playwright-Browser installieren
-echo "📦 Installiere Playwright-Browser..."
-playwright install --with-deps
-
 # 🧠 Starte Flask-App
 echo "🚀 Starte Flask-App..."
 python3 -m flask run --host=0.0.0.0 --port=5050
