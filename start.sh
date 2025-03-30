@@ -2,15 +2,13 @@
 
 echo "📦 Starte Setup..."
 
-# Überprüfen, ob das Projektverzeichnis existiert, wenn nicht, aus GitHub klonen
-if [ ! -d .git ]; then
-  echo "📥 Klone Projekt aus GitHub..."
-  # Entferne alle Dateien und klone das Projekt neu (falls erforderlich)
-  git clone https://github.com/MinhMTV/Photo_Voting_Contest.git
-else
-  echo "🔄 Führe Git Pull aus..."
-  git pull || echo "⚠️ Git Pull fehlgeschlagen"
-fi
+# Entferne alle alten Dateien und klone das Repo neu
+rm -rf /app/*  # Löscht alle Dateien, um eine frische Installation sicherzustellen
+
+echo "📥 Klone Projekt aus GitHub..."
+git clone https://github.com/MinhMTV/Photo_Voting_Contest.git /app || exit 1
+
+cd /app
 
 # Wenn .env nicht existiert, wird sie erstellt
 if [ ! -f .env ]; then
