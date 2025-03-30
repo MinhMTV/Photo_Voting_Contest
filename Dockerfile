@@ -1,7 +1,7 @@
 FROM python:3.12
 
 # Arbeitsverzeichnis festlegen
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Systemabhängigkeiten und git installieren
 RUN apt-get update && apt-get install -y nano git curl
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y nano git curl
 COPY . .
 
 # Stelle sicher, dass das start.sh-Skript ausführbar ist
-RUN chmod +x /usr/src/app/start.sh
+RUN chmod +x /start.sh
 
 # Starten per Skript
 CMD ["/start.sh"]
