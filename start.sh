@@ -10,6 +10,7 @@ if [ ! -d .git ]; then
 else
   echo "🔄 Führe Git Pull aus..."
   # Sicherstellen, dass der lokale Branch mit dem Remote-Branch verbunden ist
+  git checkout main || git checkout -b main
   git branch --set-upstream-to=origin/main main || echo "⚠️ Fehler beim Setzen des Remote-Tracking-Branches"
   git pull || echo "⚠️ Git Pull fehlgeschlagen"
 fi
