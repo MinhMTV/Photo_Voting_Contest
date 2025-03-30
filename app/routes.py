@@ -1,3 +1,5 @@
+import uuid
+
 from flask import Blueprint, render_template, request, redirect, url_for, session, current_app, jsonify
 import os
 from werkzeug.utils import secure_filename
@@ -12,7 +14,15 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_voter_ip():
-    return request.headers.get('X-Forwarded-For', request.remote_addr)
+    # Holen der voter_session_id aus dem Cookie
+    voter_session_id = request.cookies.get('voter_session_id')
+    if not voter_session_id:
+        # Erstelle eine neue eindeutige ID, wenn der Benutzer noch nicht identifiziert wurde
+        voter_session_id = str(uuid.uuid4())
+        response = jsonify(success=True)
+        response.set_cookie('voter_session_id', voter_session_id, max_age=365*24*60*60)  # Gültig für ein Jahr
+        return response
+    return voter_session_id
 
 # === Startseite / Galerie ===
 @bp.route('/')
@@ -28,36 +38,39 @@ def index():
     return render_template('index.html', images=images, voted_ids=voted_ids, votes_left=votes_left)
 
 # === Voting (IP-gebunden, 1 Stimme pro Bild) ===
+import uuid
 
 @bp.route('/vote/<int:image_id>', methods=['POST'])
 def vote(image_id):
-    voter_ip = get_voter_ip()
+    # Identifiziere den Benutzer per session oder cookiebasiert
+    voter_session_id = get_voter_ip()
     db = get_db()
 
+    # Prüfen, ob der Benutzer bereits für dieses Bild abgestimmt hat
     vote_exists = db.execute(
-        'SELECT 1 FROM votes WHERE image_id = ? AND voter_ip = ?',
-        (image_id, voter_ip)
+        'SELECT 1 FROM votes WHERE image_id = ? AND voter_session_id = ?',
+        (image_id, voter_session_id)
     ).fetchone()
 
     if vote_exists:
-        db.execute('DELETE FROM votes WHERE image_id = ? AND voter_ip = ?', (image_id, voter_ip))
+        db.execute('DELETE FROM votes WHERE image_id = ? AND voter_session_id = ?', (image_id, voter_session_id))
     else:
-        # Max 3 Stimmen prüfen
+        # Maximal 3 Stimmen pro Benutzer, wenn der Benutzer schon 3 Stimmen hat, gib eine Fehlermeldung zurück
         vote_count = db.execute(
-            'SELECT COUNT(*) FROM votes WHERE voter_ip = ?',
-            (voter_ip,)
+            'SELECT COUNT(*) FROM votes WHERE voter_session_id = ?',
+            (voter_session_id,)
         ).fetchone()[0]
 
         if vote_count >= 3:
-            return jsonify(success=False, error="Limit erreicht"), 403
+            return jsonify(success=False, error="Du hast das Stimmenlimit erreicht"), 403
 
-        db.execute('INSERT INTO votes (image_id, voter_ip) VALUES (?, ?)', (image_id, voter_ip))
+        db.execute('INSERT INTO votes (image_id, voter_session_id) VALUES (?, ?)', (image_id, voter_session_id))
 
     db.commit()
 
     updated_vote_count = db.execute(
-        'SELECT COUNT(*) FROM votes WHERE voter_ip = ?',
-        (voter_ip,)
+        'SELECT COUNT(*) FROM votes WHERE voter_session_id = ?',
+        (voter_session_id,)
     ).fetchone()[0]
 
     return jsonify(success=True, vote_count=updated_vote_count)
@@ -173,7 +186,7 @@ def results():
             ORDER BY RANDOM()
         ''').fetchall()
 
-    voters = db.execute('SELECT COUNT(DISTINCT voter_ip) FROM votes').fetchone()[0]
+    voters = db.execute('SELECT COUNT(DISTINCT voter_session_id) FROM votes').fetchone()[0]
     total_votes = db.execute('SELECT COUNT(*) FROM votes').fetchone()[0]
 
     flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
@@ -185,7 +198,6 @@ def results():
                            total_votes=total_votes,
                            published=published,
                            show_stats=show_stats)
-
 
 
 @bp.route('/public-results')
