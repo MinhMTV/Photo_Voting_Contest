@@ -3,6 +3,8 @@ FROM python:3.12
 # Arbeitsverzeichnis festlegen
 WORKDIR /app
 
+RUN rm -rf /app/*
+
 # Installiere notwendige Systempakete
 RUN apt-get update && apt-get install -y nano git curl
 
