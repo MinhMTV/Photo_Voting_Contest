@@ -186,6 +186,7 @@ def results():
             ORDER BY RANDOM()
         ''').fetchall()
 
+    # Ändern der Zählung, um nur einzigartige voter_session_ids zu zählen
     voters = db.execute('SELECT COUNT(DISTINCT voter_session_id) FROM votes').fetchone()[0]
     total_votes = db.execute('SELECT COUNT(*) FROM votes').fetchone()[0]
 
@@ -198,7 +199,6 @@ def results():
                            total_votes=total_votes,
                            published=published,
                            show_stats=show_stats)
-
 
 @bp.route('/public-results')
 def public_results():
