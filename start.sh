@@ -5,7 +5,7 @@ echo "📦 Starte Setup..."
 # Überprüfen, ob das Projektverzeichnis existiert, wenn nicht, aus GitHub klonen
 if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
-  rm -rf .[^.]* *  # löscht ALLE Dateien inkl. .git, .env, .flaskenv etc.
+  #rm -rf .[^.]* *  # löscht ALLE Dateien inkl. .git, .env, .flaskenv etc.
   git clone https://github.com/MinhMTV/Photo_Voting_Contest.git . || exit 1
 else
   echo "🔄 Führe Git Pull aus..."
