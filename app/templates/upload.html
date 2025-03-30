@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Bilder verwalten – Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .image-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .image-row img {
+            width: 200px;
+            height: auto;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body class="container py-5">
+
+    <h1 class="mb-4">📁 Bilder verwalten (Adminbereich)</h1>
+
+    <!-- Upload-Formular -->
+    <form method="POST" enctype="multipart/form-data" class="mb-4">
+        <div class="input-group">
+            <input type="file" class="form-control" id="files" name="files" multiple accept="image/*" required>
+            <button type="submit" class="btn btn-primary">Hochladen</button>
+        </div>
+    </form>
+
+    <!-- Hauptformular für Bearbeitung -->
+    <form method="POST" action="{{ url_for('main.update_images') }}">
+        {% for image in images %}
+        <div class="image-row">
+            <!-- Bildvorschau -->
+            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="Bild {{ loop.index }}">
+
+            <div class="d-flex justify-content-between w-100">
+            <!-- Eingabefelder -->
+            <div class="flex-grow-1">
+                <div class="mb-2">
+                    <label class="form-label">Kostümname</label>
+                    <input type="text" class="form-control" name="uploader_{{ image.id }}" value="{{ image.uploader or '' }}">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Beschreibung</label>
+                    <input type="text" class="form-control" name="description_{{ image.id }}" value="{{ image.description or '' }}">
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="visible_{{ image.id }}" id="visible_{{ image.id }}" {% if image.visible %}checked{% endif %}>
+                    <label class="form-check-label" for="visible_{{ image.id }}">Veröffentlicht</label>
+                </div>
+            </div>
+
+            <!-- JavaScript-Löschbutton -->
+            <div class="d-flex align-items-center">
+                <button type="button" class="btn btn-sm btn-danger"
+                        onclick="deleteImage({{ image.id }}, '{{ image.filename }}')">🗑️</button>
+            </div>
+        </div>
+        </div>
+        {% endfor %}
+
+        <!-- Steuerbuttons -->
+        <div class="mt-4 d-flex justify-content-between">
+            <button type="submit" name="action" value="save" class="btn btn-outline-secondary">💾 Entwurf speichern</button>
+            <button type="submit" name="action" value="publish" class="btn btn-success">🚀 Veröffentlichen</button>
+        </div>
+    </form>
+
+    <!-- Footer -->
+    <div class="mt-5">
+        <a href="{{ url_for('main.logout') }}" class="btn btn-outline-dark">Logout</a>
+        <a href="{{ url_for('main.index') }}" class="btn btn-link">Zur Galerie</a>
+        <a href="{{ url_for('main.results') }}" class="btn btn-info">📊 Ranking anzeigen</a>
+    </div>
+
+    <!-- JavaScript für Bildlöschung -->
+    <script>
+        function deleteImage(imageId, filename) {
+            if (confirm(`Bild "${filename}" wirklich löschen?`)) {
+                fetch(`/delete-image/${imageId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert("❌ Fehler beim Löschen");
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
