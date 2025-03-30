@@ -14,53 +14,65 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_voter_ip():
+    # Versuche, die voter_session_id aus dem Cookie zu bekommen
     voter_session_id = request.cookies.get('voter_session_id')
+
+    # Wenn noch kein Cookie gesetzt wurde, erstellen wir eine neue ID
     if not voter_session_id:
         # Erstelle eine neue eindeutige ID, wenn der Benutzer noch nicht identifiziert wurde
         voter_session_id = str(uuid.uuid4())
-        # Setze das Cookie für den Benutzer
-        response = jsonify(success=True)
-        response.set_cookie('voter_session_id', voter_session_id, max_age=365*24*60*60)  # Gültig für ein Jahr
-        return voter_session_id  # Gebe die ID direkt zurück, ohne eine Response zu erstellen
-    return voter_session_id  # Gebe die bestehende ID zurück
+
+        # Setze den Cookie für den Benutzer (Gültig für 1 Jahr)
+        response = jsonify(success=True)  # Erstelle eine Antwort
+        response.set_cookie('voter_session_id', voter_session_id, max_age=365*24*60*60)  # Setze das Cookie
+        print(f"Cookies values {request.cookies}")
+        # Gib die Antwort zurück, die den Cookie gesetzt hat
+        return voter_session_id  # Rückgabe nur der ID
+
+    # Wenn der Cookie schon existiert, einfach die ID zurückgeben
+    return voter_session_id
 
 # === Startseite / Galerie ===
 @bp.route('/')
 def index():
     db = get_db()
     images = db.execute('SELECT * FROM images WHERE visible = 1 ORDER BY uploaded_at DESC').fetchall()
-    voter_ip = get_voter_ip()
 
-    voted = db.execute('SELECT image_id FROM votes WHERE voter_session_id = ?', (voter_ip,)).fetchall()
+    # Hole die voter_session_id aus dem localStorage (vom Frontend geschickt)
+    voter_session_id = request.cookies.get('voter_session_id')  # oder aus localStorage, falls nötig
+
+    # Hole alle Bild-IDs, die der Benutzer bereits abgestimmt hat
+    voted = db.execute('SELECT image_id FROM votes WHERE voter_session_id = ?', (voter_session_id,)).fetchall()
     voted_ids = [row['image_id'] for row in voted]
+
     votes_left = max(0, 3 - len(voted_ids))  # max. 3 Stimmen
 
     return render_template('index.html', images=images, voted_ids=voted_ids, votes_left=votes_left)
 
 # === Voting (IP-gebunden, 1 Stimme pro Bild) ===
-import uuid
-
 @bp.route('/vote/<int:image_id>', methods=['POST'])
 def vote(image_id):
-    # Identifiziere den Benutzer per session oder cookiebasiert
-    voter_session_id = get_voter_ip()
+    # Hole die voter_session_id aus dem localStorage
+    voter_session_id = request.json.get('voter_session_id')
     db = get_db()
 
-    # Prüfen, ob der Benutzer bereits für dieses Bild abgestimmt hat
+    # Prüfe, ob der Benutzer schon für dieses Bild abgestimmt hat
     vote_exists = db.execute(
         'SELECT 1 FROM votes WHERE image_id = ? AND voter_session_id = ?',
         (image_id, voter_session_id)
     ).fetchone()
 
     if vote_exists:
+        # Entferne die Stimme, falls sie existiert
         db.execute('DELETE FROM votes WHERE image_id = ? AND voter_session_id = ?', (image_id, voter_session_id))
     else:
-        # Maximal 3 Stimmen pro Benutzer, wenn der Benutzer schon 3 Stimmen hat, gib eine Fehlermeldung zurück
+        # Wenn nicht, füge die Stimme hinzu
         vote_count = db.execute(
             'SELECT COUNT(*) FROM votes WHERE voter_session_id = ?',
             (voter_session_id,)
         ).fetchone()[0]
 
+        # Begrenze die Stimmen auf 3
         if vote_count >= 3:
             return jsonify(success=False, error="Du hast das Stimmenlimit erreicht"), 403
 
@@ -74,6 +86,7 @@ def vote(image_id):
     ).fetchone()[0]
 
     return jsonify(success=True, vote_count=updated_vote_count)
+
 
 # === Login (einfacher Passwortschutz) ===
 @bp.route('/login', methods=['GET', 'POST'])
