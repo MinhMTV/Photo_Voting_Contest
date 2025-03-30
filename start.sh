@@ -9,7 +9,10 @@ if [ ! -d .git ]; then
   git clone https://github.com/MinhMTV/Photo_Voting_Contest.git
 else
   echo "🔄 Führe Git Pull aus..."
-  git pull || echo "⚠️ Git Pull fehlgeschlagen"
+  git fetch --all
+
+  # Erzwungener Reset, um die lokalen Änderungen zu verwerfen und den Stand von 'main' zu übernehmen
+  git reset --hard origin/main || echo "⚠️ Git Pull fehlgeschlagen"
 fi
 
 # Wenn .env nicht existiert, wird sie erstellt
