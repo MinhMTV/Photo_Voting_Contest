@@ -28,18 +28,6 @@ else
   echo "✅ .env Datei existiert – wird nicht überschrieben."
 fi
 
-# Sicherstellen, dass die notwendigen Systempakete und Abhängigkeiten vorhanden sind
-echo "📦 Installiere System-Abhängigkeiten..."
-apt-get update && apt-get install -y nano git curl
-
-# Stelle sicher, dass alle Python-Abhängigkeiten installiert sind
-if [ -f "requirements.txt" ]; then
-  echo "📦 Installiere Python-Abhängigkeiten..."
-  pip install --no-cache-dir -r requirements.txt
-else
-  echo "⚠️ Keine requirements.txt gefunden!"
-fi
-
 # 🧠 Starte Flask-App
 echo "🚀 Starte Flask-App..."
 python3 -m flask run --host=0.0.0.0 --port=5050
