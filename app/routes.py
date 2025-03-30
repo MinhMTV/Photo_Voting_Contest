@@ -171,10 +171,12 @@ def results():
     show_stats = request.form.get('show_stats') == '1'
 
     if show_stats:
+        # Zählt die Votes für jedes Bild, basierend auf der Anzahl der Einträge in der 'votes' Tabelle
         top_images = db.execute('''
             SELECT images.id, images.filename, images.uploader, images.description, COUNT(votes.id) as vote_count
             FROM images
             LEFT JOIN votes ON images.id = votes.image_id
+            WHERE votes.id IS NOT NULL  -- Nur Votes zählen, die noch existieren
             GROUP BY images.id
             ORDER BY vote_count DESC
         ''').fetchall()
@@ -186,9 +188,12 @@ def results():
             ORDER BY RANDOM()
         ''').fetchall()
 
-    # Ändern der Zählung, um nur einzigartige voter_session_ids zu zählen
+    # Zählt nur gültige, nicht zurückgezogene Stimmen
+    # Hier werden alle vorhandenen Stimmen gezählt (nicht gelöscht)
+    total_votes = db.execute('SELECT COUNT(*) FROM votes WHERE id IS NOT NULL').fetchone()[0]
+
+    # Zählt die einzigartigen Wähler
     voters = db.execute('SELECT COUNT(DISTINCT voter_session_id) FROM votes').fetchone()[0]
-    total_votes = db.execute('SELECT COUNT(*) FROM votes').fetchone()[0]
 
     flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
     published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
