@@ -7,5 +7,3 @@ services:
     restart: unless-stopped
     ports:
       - "5050:5050"
-    volumes:
-      - .:/usr/src/app
