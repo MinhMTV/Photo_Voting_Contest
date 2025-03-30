@@ -9,6 +9,8 @@ if [ ! -d .git ]; then
   git clone https://github.com/MinhMTV/Photo_Voting_Contest.git
 else
   echo "🔄 Führe Git Pull aus..."
+  # Sicherstellen, dass der lokale Branch mit dem Remote-Branch verbunden ist
+  git branch --set-upstream-to=origin/main main || echo "⚠️ Fehler beim Setzen des Remote-Tracking-Branches"
   git pull || echo "⚠️ Git Pull fehlgeschlagen"
 fi
 
