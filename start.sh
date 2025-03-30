@@ -4,11 +4,11 @@ echo "📦 Starte Setup..."
 
 if [ ! -d .git ]; then
   echo "📥 Klone Projekt aus GitHub..."
-  rm -rf * && \
-  git clone https://github.com/MinhMTV/Photo_Voting_Contest.git .;
+  rm -rf .[^.]* *  # löscht ALLE Dateien inkl. .git, .env, .flaskenv etc.
+  git clone https://github.com/MinhMTV/Photo_Voting_Contest.git . || exit 1
 else
   echo "🔄 Führe Git Pull aus..."
-  git pull
+  git pull || echo "⚠️ Git Pull fehlgeschlagen"
 fi
 
 if [ ! -f .env ]; then
@@ -21,6 +21,8 @@ FLASK_RUN_PORT=5050
 ADMIN_PASSWORD=changeme
 SECRET_KEY=changeme
 EOF
+else
+  echo "✅ .env Datei existiert – wird nicht überschrieben."
 fi
 
 echo "🚀 Starte Flask-App..."
