@@ -4,10 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Fotowettbewerb</title>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+        <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             padding-top: 80px;
+            background: linear-gradient(to right, #ff5c8d, #ff8d99); /* Pinker Hintergrund */
+            position: relative;
+            height: 100vh;  /* Stellt sicher, dass die Höhe 100% des Viewports ist */
+            overflow-x: hidden
         }
 
         .image-box {
@@ -17,16 +23,25 @@
             padding: 10px;
             margin-bottom: 20px;
             text-align: center;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             word-wrap: break-word;
+            background-color: white;
         }
 
         .image-box img {
             width: 100%;
             height: auto;
-            border-radius: 6px;
-            cursor: pointer;
+            border-radius: 10px;
+            opacity: 0;
+            animation: fadeIn 1s forwards;
+        }
+
+        /* Fade-In Animation für Bilder */
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
         }
 
         .image-box p {
@@ -45,16 +60,28 @@
             border-radius: 50%;
             font-size: 18px;
             line-height: 1;
+            transform: scale(0.8);
+            opacity: 0;
+            animation: zoomIn 0.4s ease-in forwards;
+            animation-delay: 1s; /* Animation verzögern */
         }
-                .vote-button.btn-success {
-            background-color: #ff4b5c;  /* Beispielhafte Hintergrundfarbe (rot) */
+
+        @keyframes zoomIn {
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .vote-button.btn-success {
+            background-color: #ff4b5c;  /* Pinke Hintergrundfarbe */
             color: white;
             border: none;
         }
 
         /* Umrandung für das leere Herz */
         .vote-button.btn-outline-success {
-            border-color: #ff4b5c; /* Beispielhafte Farbe für die Umrandung (rot) */
+            border-color: #ff4b5c; /* Pinke Umrandung */
             color: #ff4b5c;
         }
 
@@ -68,6 +95,47 @@
         .voted {
             opacity: 0.5;
         }
+
+        /* Button-Animationen */
+        .btn-pink {
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .btn-pink:hover {
+            transform: scale(1.1);
+            background-color: #ff4b5c;
+        }
+
+        /* Für die Textanimation */
+        @keyframes slideIn {
+            0% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .lottie-container {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            z-index: 1000;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 1s ease-out forwards;
+        }
+        #rabbit {
+            width: 50px;
+            height: 50px;
+            background-image: url('https://img.icons8.com/?size=100&id=6n6VZ02KZwP1&format=png&color=000000'); /* Dein Hase Bild */
+            background-size: contain;
+            position: absolute;
+            z-index: 1;  /* Hase wird immer oben sein */
+        }
+
     </style>
 </head>
 <body>
@@ -80,9 +148,13 @@
     </div>
 </nav>
 
+<div id="rabbit"></div>
+
+
 <div class="alert alert-info text-center mb-4">
     Du hast noch <strong>{{ votes_left }}</strong> von 3 Stimmen verfügbar.
 </div>
+
 <!-- Galerie -->
 <div class="container py-4">
     <div class="row">
@@ -139,6 +211,37 @@
     </div>
 </div>
 
+
+<script>
+    // Funktion für zufällige Positionen im sichtbaren Bereich
+    function getRandomPosition(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Berechne die Größe des sichtbaren Bereichs
+    const screenWidth = window.innerWidth; // Breite des Viewports
+    const screenHeight = window.innerHeight; // Höhe des Viewports
+
+    // Logge die berechneten Werte in die Konsole
+    console.log(`Sichtbare Breite: ${screenWidth}px, Höhe: ${screenHeight}px`);
+
+    // Hase bewegt sich zufällig auf dem Bildschirm
+    function moveRabbit() {
+        anime({
+            targets: '#rabbit',
+            translateX: getRandomPosition(0, screenWidth),  // Zufällige horizontale Position
+            translateY: getRandomPosition(0, screenHeight),   // Zufällige vertikale Position
+            duration: 2000,  // Dauer der Animation
+            easing: 'easeInOutQuad',
+            complete: function() {
+                moveRabbit();  // Nach Abschluss der Animation wird die Bewegung erneut gestartet
+            }
+        });
+    }
+
+    moveRabbit();  // Starte die Bewegung des Hasen
+</script>
+
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
@@ -146,20 +249,27 @@
 document.addEventListener('DOMContentLoaded', function () {
     const maxVotes = 3;
     const voteButtons = document.querySelectorAll('.vote-button');
+    let isVotingInProgress = false;  // Sperre, um mehrfaches Abstimmen zu verhindern
 
     // Lade die bereits abgegebenen Stimmen aus dem localStorage
-    const votedImages = JSON.parse(localStorage.getItem('votedImages')) || [];
-    const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4(); // Verwende uuid.v4() statt uuidv4()// Generiere eine neue ID, wenn nicht vorhanden
+    let votedImages = JSON.parse(localStorage.getItem('votedImages')) || [];
+    console.log("Voted Images from localStorage:", votedImages);
+    const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
     localStorage.setItem('voter_session_id', voterSessionId);
 
     // Update der UI basierend auf den abgegebenen Votes
     voteButtons.forEach(button => {
         const imageId = button.dataset.imageId;
         if (votedImages.includes(imageId)) {
-            button.classList.add('btn-success');  // Hintergrundfarbe für ausgefülltes Herz
-            button.classList.remove('btn-outline-success');  // Entfernt die Umrandung
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-success');
             button.dataset.voted = 'true';
-            button.innerText = '❤️';  // Zeige das ausgefüllte Herz an
+            button.innerText = '❤️';
+        } else {
+            button.classList.add('btn-outline-success');
+            button.classList.remove('btn-success');
+            button.dataset.voted = 'false';
+            button.innerText = '🤍';
         }
     });
 
@@ -172,57 +282,95 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    updateVotesLeft();  // Update direkt nach dem Laden der Seite
+    updateVotesLeft(); // Update die Stimmenanzahl direkt nach dem Laden
+
+    // Funktion für das Hinzufügen der Lottie-Animation an der Klick-Position
+    function showLottieAnimation(button) {
+        const rect = button.getBoundingClientRect(); // Get the position of the vote button with respect to the viewport
+        const x = rect.left + window.scrollX + rect.width / 2;  // Center of the button
+        const y = rect.top + window.scrollY + rect.height / 2;
+
+        const lottieContainer = document.createElement('div');
+        lottieContainer.classList.add('lottie-container');
+        lottieContainer.style.left = `${x - 50}px`;  // Center the animation at the button
+        lottieContainer.style.top = `${y - 50}px`;   // Center the animation at the button
+
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://lottie.host/embed/dcc41816-9315-4098-9887-77d16ad21917/lC1fPNqDZE.lottie';
+        iframe.style.width = '100px';
+        iframe.style.height = '100px';
+        iframe.style.border = 'none';
+
+        lottieContainer.appendChild(iframe);
+        document.body.appendChild(lottieContainer);
+
+        setTimeout(() => {
+            lottieContainer.remove();
+        }, 4000); // 4-second duration
+    }
 
     // Voting-Button-Event-Listener
     voteButtons.forEach(button => {
-        button.addEventListener('click', function () {
+        button.addEventListener('click', function (e) {
+            if (isVotingInProgress) {
+                return; // Verhindert mehrfaches Abstimmen während des Abstimmprozesses
+            }
+
             const imageId = this.dataset.imageId;
 
-            // Verhindere, dass mehr als 3 Stimmen abgegeben werden
-            if (votedImages.length >= maxVotes && !this.dataset.voted) {
+            // Überprüfe, ob das Bild bereits in votedImages enthalten ist
+            if (votedImages.length >= maxVotes && !votedImages.includes(imageId)) {
                 alert("Du hast bereits 3 Stimmen vergeben.");
                 return;
             }
 
-            // Wenn der Benutzer bereits abgestimmt hat, entferne die Stimme
+            // Sperre setzen, um mehrfaches Abstimmen zu verhindern
+            isVotingInProgress = true;
+
             if (this.dataset.voted === 'true') {
+                // Stimme entfernen
                 const index = votedImages.indexOf(imageId);
                 if (index > -1) {
-                    votedImages.splice(index, 1); // Entferne das Bild aus votedImages
+                    votedImages.splice(index, 1);  // Entferne das Bild aus votedImages
                 }
-                this.classList.remove('btn-success');  // Entferne den Hintergrund
-                this.classList.add('btn-outline-success');  // Füge die Umrandung hinzu
-                this.dataset.voted = 'false';
-                this.innerText = '🤍';  // Zeige das leere Herz an
+                this.classList.remove('btn-success');
+                this.classList.add('btn-outline-success');
+                this.dataset.voted = 'false';  // Synchronisiere das dataset.voted mit der Änderung
+                this.innerText = '🤍';
             } else {
-                // Wenn noch nicht abgestimmt, füge den Vote hinzu
+                // Stimme hinzufügen
                 if (votedImages.length < maxVotes) {
-                    votedImages.push(imageId);
-                    this.classList.remove('btn-outline-success');  // Entferne die Umrandung
-                    this.classList.add('btn-success');  // Füge den Hintergrund hinzu
-                    this.dataset.voted = 'true';
-                    this.innerText = '❤️';  // Zeige das ausgefüllte Herz an
+                    votedImages.push(imageId);  // Füge das Bild zu votedImages hinzu
+                    this.classList.remove('btn-outline-success');
+                    this.classList.add('btn-success');
+                    this.dataset.voted = 'true';  // Synchronisiere das dataset.voted mit der Änderung
+                    this.innerText = '❤️';
+
+                    // Lottie-Animation ausführen
+                    showLottieAnimation(this);
                 }
             }
 
-            // Speichere die abgestimmten Bilder im localStorage
+            // Stimmen speichern
             localStorage.setItem('votedImages', JSON.stringify(votedImages));
-
-            // Aktualisiere die Anzeige der verbleibenden Stimmen
             updateVotesLeft();
 
-            // Sende die Vote-Informationen an den Server
+            // Vote an den Server senden
             fetch(`/vote/${imageId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voter_session_id: voterSessionId })
-            })
-            .then(response => response.json())
-            .then(data => {
+            }).then(response => response.json()).then(data => {
                 if (!data.success) {
+                    console.log("Error:", data.error);
                     alert(data.error);
                 }
+                // Sperre wieder aufheben, nachdem der Vorgang abgeschlossen ist
+                isVotingInProgress = false;
+            }).catch((error) => {
+                console.error('Error:', error);
+                // Sperre wieder aufheben bei Fehler
+                isVotingInProgress = false;
             });
         });
     });
