@@ -167,6 +167,56 @@ dotlottie-player {
             z-index: 1;  /* Hase wird immer oben sein */
         }
 
+        .sticker {
+    position: fixed;
+    width: 60px;
+    height: auto;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+/* Add gentle floating animation */
+.floating-sticker {
+    animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes floaty {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(2deg); }
+    100% { transform: translateY(0px) rotate(-2deg); }
+}
+
+.sticker-wrapper {
+    position: relative;
+}
+
+.gallery-sticker {
+    position: absolute;
+    width: 80px;
+    height: auto;
+    z-index: 10;
+    pointer-events: none;
+    animation: floaty 6s ease-in-out infinite;
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .gallery-sticker {
+        width: 50px;
+    }
+}
+
+@keyframes floaty {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    50% { transform: translate(-50%, -60%) rotate(1deg); }
+    100% { transform: translate(-50%, -50%) rotate(-1deg); }
+}
+
+
+
+
+
     </style>
 </head>
 <body>
@@ -175,6 +225,7 @@ dotlottie-player {
 
 <!-- Lottie Animation für mobile Geräte -->
 <dotlottie-player src="https://lottie.host/531c9c96-58a0-4053-871c-8d3fe0a4476b/n5EMg6SkHn.lottie" class="mobile-background" background="transparent" speed="1" loop autoplay></dotlottie-player>
+
 
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-light fixed-top shadow-sm">
@@ -245,6 +296,31 @@ dotlottie-player {
         {% endfor %}
     </div>
 </div>
+
+<!-- ❗ Popup bei Stimmenlimit -->
+<div class="modal fade" id="limitModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center border-3 border-danger">
+      <div class="modal-header bg-dark text-white justify-content-center">
+        <h1 class="modal-title w-100" style="font-size: 2rem;">😡 HEY DU PENNER 😡</h1>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3 fw-semibold" style="font-size: 1.1rem;">
+          Du hast <span class="text-danger fw-bold">alle 3 Stimmen</span> rausgeballert 💥💣<br>
+          Und jetzt klickst du hier noch rum wie'n loster Fisch? 🐟🤡<br><br>
+          Chill mal kurz und denk nach: <br>
+          <span class="text-decoration-underline">Geh einfach… oder</span><br>
+          <strong>mach 'nen Neuwahl-Reset und benimm dich wie ein Ehrenmann 🧠 Sonst gib ich dir ne Bombe💣 Oder ein Knocker wie der Boomer sagt</strong>
+        </p>
+        <button class="btn btn-outline-danger" data-bs-dismiss="modal">
+          🔁 Okay, ich wähl nochmal wie'n King
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 <script>
     // Funktion für zufällige Positionen im sichtbaren Bereich
@@ -353,9 +429,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Überprüfe, ob das Bild bereits in votedImages enthalten ist
             if (votedImages.length >= maxVotes && !votedImages.includes(imageId)) {
-                alert("Du hast bereits 3 Stimmen vergeben.");
+                const modal = new bootstrap.Modal(document.getElementById('limitModal'));
+                modal.show();
                 return;
             }
+
 
             // Sperre setzen, um mehrfaches Abstimmen zu verhindern
             isVotingInProgress = true;
@@ -409,5 +487,59 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<script>
+fetch('/api/stickers')
+    .then(response => response.json())
+    .then(stickerList => {
+        const galleryItems = document.querySelectorAll('.image-box');
+        const maxStickers = 10; // Gesamtanzahl der Sticker
+
+        // Positionen definieren, nur Ecken und Ränder
+        const positions = [
+            { top: '0', left: '0', transform: 'translate(-20%, -20%)' }, // oben links
+            { top: '0', right: '0', transform: 'translate(20%, -20%)' }, // oben rechts
+            { bottom: '0', left: '0', transform: 'translate(-20%, 20%)' }, // unten links
+            { bottom: '0', right: '0', transform: 'translate(20%, 20%)' }, // unten rechts
+            { top: '0', left: '50%', transform: 'translate(-50%, -30%)' }, // oben zentriert
+            { top: '50%', left: '0', transform: 'translate(-30%, -50%)' }, // links zentriert
+            { top: '50%', right: '0', transform: 'translate(30%, -50%)' }  // rechts zentriert
+        ];
+
+        for (let i = 0; i < maxStickers; i++) {
+            const galleryItem = galleryItems[Math.floor(Math.random() * galleryItems.length)];
+            const stickerFile = stickerList[Math.floor(Math.random() * stickerList.length)];
+            const stickerImg = document.createElement('img');
+            stickerImg.src = `/static/stickers/${stickerFile}`;
+            stickerImg.className = 'gallery-sticker';
+
+            // Zufällige Position aus der Ränderliste
+            const pos = positions[Math.floor(Math.random() * positions.length)];
+            for (const [key, value] of Object.entries(pos)) {
+                stickerImg.style[key] = value;
+            }
+
+            // Wrapper setzen (einmalig)
+            const parentCol = galleryItem.parentNode;
+            let wrapper;
+            if (parentCol.classList.contains('sticker-wrapper')) {
+                wrapper = parentCol;
+            } else {
+                wrapper = document.createElement('div');
+                wrapper.className = 'sticker-wrapper position-relative';
+                parentCol.insertBefore(wrapper, galleryItem);
+                wrapper.appendChild(galleryItem);
+            }
+
+            wrapper.appendChild(stickerImg);
+        }
+    });
+
+
+
+
+
+
+</script>
+
 </body>
 </html>

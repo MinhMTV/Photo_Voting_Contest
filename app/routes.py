@@ -231,3 +231,9 @@ def toggle_publish():
         f.write('1' if action == 'show' else '0')
 
     return redirect(url_for('main.results'))
+
+@bp.route('/api/stickers')
+def list_stickers():
+    sticker_folder = os.path.join(current_app.static_folder, 'stickers')
+    files = [f for f in os.listdir(sticker_folder) if f.endswith('.webp')]
+    return jsonify(files)
