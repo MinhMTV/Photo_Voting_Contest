@@ -229,11 +229,15 @@ dotlottie-player {
 
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-light fixed-top shadow-sm">
-    <div class="container-fluid">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
         <span class="navbar-brand mb-0 h1">🖼️ Fotowettbewerb von LaniLAN und MINGMING</span>
-        <a href="{{ url_for('main.login') }}" class="btn btn-outline-secondary btn-sm">Admin Login</a>
+        <div class="d-flex gap-2">
+            <a href="https://thatsmyname.de/public-results" class="btn btn-outline-primary btn-sm">📊 Ergebnisse</a>
+            <a href="{{ url_for('main.login') }}" class="btn btn-outline-secondary btn-sm">🔐 Admin Login</a>
+        </div>
     </div>
 </nav>
+
 
 <div id="rabbit"></div>
 
