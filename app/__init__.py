@@ -13,7 +13,8 @@ def create_app():
         UPLOAD_FOLDER=os.path.join(app.root_path, 'static/uploads'),
         DATABASE=os.path.join(app.instance_path, 'votes.db'),
         CURRENT_CONTEST_YEAR=int(os.getenv("CURRENT_CONTEST_YEAR", "2025")),
-        LEGACY_CONTEST_YEARS=[2024]
+        LEGACY_CONTEST_YEARS=[2024],
+        VOTING_END_AT=os.getenv("VOTING_END_AT", "2025-12-31T23:59:59")
     )
 
     load_dotenv()

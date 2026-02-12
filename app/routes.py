@@ -48,7 +48,8 @@ def contest_year(year: int):
         voted_ids=voted_ids,
         votes_left=votes_left,
         year=year,
-        legacy_years=legacy_years
+        legacy_years=legacy_years,
+        voting_end_at=current_app.config.get('VOTING_END_AT')
     )
 
 

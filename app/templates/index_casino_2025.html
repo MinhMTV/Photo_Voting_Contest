@@ -18,6 +18,7 @@
         .btn-gold:hover{background:#e5b94f}
         .chip{display:inline-block;padding:4px 10px;border-radius:999px;background:#301d57;color:#ffe8a7;border:1px solid #8d6b2f}
         .slot-title{font-size:1.1rem;color:#ffdf8e}
+        .countdown{font-weight:700;color:#ffdf8e;text-shadow:0 0 8px rgba(255,215,120,.25)}
     </style>
 </head>
 <body>
@@ -36,7 +37,10 @@
 <div id="casino-stickers"></div>
 
 <div class="container py-3">
-    <div class="text-center mb-3"><span class="chip">Du hast noch <strong>{{ votes_left }}</strong> / 3 Stimmen</span></div>
+    <div class="text-center mb-3 d-flex flex-column gap-2 align-items-center">
+        <span class="chip">Du hast noch <strong>{{ votes_left }}</strong> / 3 Stimmen</span>
+        <span class="chip countdown" id="countdown" data-end="{{ voting_end_at }}">⏳ Countdown lädt...</span>
+    </div>
     <div class="row g-3">
         {% for image in images %}
         <div class="col-12 col-sm-6 col-lg-4">
@@ -75,6 +79,24 @@ document.addEventListener('DOMContentLoaded', () => {
             layer.appendChild(img);
         }
     }).catch(() => {});
+
+    const countdownEl = document.getElementById('countdown');
+    const endAt = new Date(countdownEl.dataset.end);
+    function tickCountdown(){
+        const now = new Date();
+        const diff = endAt - now;
+        if(diff <= 0){
+            countdownEl.textContent = '🛑 Voting beendet';
+            buttons.forEach(b => b.disabled = true);
+            return;
+        }
+        const d = Math.floor(diff / (1000*60*60*24));
+        const h = Math.floor((diff / (1000*60*60)) % 24);
+        const m = Math.floor((diff / (1000*60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        countdownEl.textContent = `⏳ Voting endet in ${d}d ${h}h ${m}m ${s}s`;
+    }
+    setInterval(tickCountdown, 1000); tickCountdown();
 
     buttons.forEach(btn => {
         btn.addEventListener('click', async () => {

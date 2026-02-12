@@ -37,6 +37,7 @@
         <div><strong>{{ image.uploader or 'Anonymous' }}</strong></div>
         <div class="small text-warning">{{ image.vote_count }} Stimmen</div>
         <div class="small">{{ image.description or '' }}</div>
+        <div class="small mt-1">{% if loop.index == 1 %}🎖️ High Roller{% elif loop.index == 2 %}🎯 Lucky Shot{% elif loop.index == 3 %}🃏 Card Shark{% else %}🍀 Crowd Favorite{% endif %}</div>
       </div>
       {% endfor %}
     </div>
