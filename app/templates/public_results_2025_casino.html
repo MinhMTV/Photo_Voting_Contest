@@ -45,7 +45,7 @@
     {% endif %}
   </div>
 <script>
-fetch('/api/stickers').then(r=>r.json()).then(stickers=>{
+fetch('/api/stickers/{{ year }}').then(r=>r.json()).then(stickers=>{
   const layer=document.getElementById('winner-stickers');
   const total=Math.min(16, stickers.length);
   for(let i=0;i<total;i++){

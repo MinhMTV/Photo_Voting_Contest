@@ -236,8 +236,35 @@ def toggle_publish():
     return redirect(url_for('main.results'))
 
 
+def _sticker_index(filename: str) -> int | None:
+    base = os.path.splitext(filename)[0]
+    return int(base) if base.isdigit() else None
+
+
 @bp.route('/api/stickers')
 def list_stickers():
+    # Backward compatible default (all sticker files)
     sticker_folder = os.path.join(current_app.static_folder, 'stickers')
     files = [f for f in os.listdir(sticker_folder) if f.endswith('.webp')]
-    return jsonify(files)
+    return jsonify(sorted(files))
+
+
+@bp.route('/api/stickers/<int:year>')
+def list_stickers_for_year(year: int):
+    sticker_folder = os.path.join(current_app.static_folder, 'stickers')
+    files = [f for f in os.listdir(sticker_folder) if f.endswith('.webp')]
+
+    indexed: list[tuple[int, str]] = []
+    for f in files:
+        idx = _sticker_index(f)
+        if idx is not None:
+            indexed.append((idx, f))
+
+    if year <= 2024:
+        # Legacy set for 2024 and older contests
+        filtered = [name for idx, name in indexed if idx <= 44]
+    else:
+        # New sticker set starting at 45 for 2025+
+        filtered = [name for idx, name in indexed if idx >= 45]
+
+    return jsonify(sorted(filtered, key=lambda x: int(os.path.splitext(x)[0])))

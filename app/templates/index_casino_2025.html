@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('voter_session_id', voterSessionId);
     const buttons = document.querySelectorAll('.vote-button');
 
-    fetch('/api/stickers').then(r => r.json()).then(stickers => {
+    fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
         const layer = document.getElementById('casino-stickers');
         const total = Math.min(14, stickers.length);
         for (let i = 0; i < total; i++) {

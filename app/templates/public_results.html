@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 
 
-    fetch('/api/stickers')
+    fetch('/api/stickers/{{ year or 2024 }}')
         .then(res => res.json())
         .then(stickerList => {
             const container = document.getElementById('winner-stickers');
