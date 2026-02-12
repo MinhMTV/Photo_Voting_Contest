@@ -21,9 +21,11 @@ def create_app():
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.instance_path, exist_ok=True)
 
-    # DB initialisieren
+    # DB initialisieren + Migrationen sicher ausführen
     from . import db
     db.init_app(app)
+    with app.app_context():
+        db.init_db()
 
     # Routen registrieren
     from . import routes

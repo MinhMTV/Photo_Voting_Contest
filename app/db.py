@@ -46,6 +46,10 @@ def init_db():
     _ensure_column(db, 'images', 'contest_year', 'contest_year INTEGER DEFAULT 2025')
     _ensure_column(db, 'votes', 'contest_year', 'contest_year INTEGER DEFAULT 2025')
 
+    # Backfill legacy rows (existing contest before 2025 is treated as 2024)
+    db.execute('UPDATE images SET contest_year = 2024 WHERE contest_year IS NULL OR contest_year = 0')
+    db.execute('UPDATE votes SET contest_year = 2024 WHERE contest_year IS NULL OR contest_year = 0')
+
     db.commit()
 
 @click.command('init-db')
