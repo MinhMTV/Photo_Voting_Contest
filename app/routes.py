@@ -409,7 +409,7 @@ def results():
     # Legacy admin results page preserved
     db = get_db()
     top_images = db.execute('''
-        SELECT images.id, images.filename, images.uploader, images.description, COUNT(votes.id) as vote_count
+        SELECT images.id, images.filename, images.uploader, images.description, images.contest_year, COUNT(votes.id) as vote_count
         FROM images
         LEFT JOIN votes ON images.id = votes.image_id
         WHERE votes.id IS NOT NULL
