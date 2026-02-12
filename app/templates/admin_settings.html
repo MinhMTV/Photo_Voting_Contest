@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contest Settings</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-4">
+  <h1>⚙️ Contest Settings</h1>
+  <p class="text-muted">Hier stellst du aktuelles Contest-Jahr, Legacy-Jahre und Voting-Enddatum ein.</p>
+
+  <form method="POST" class="card p-3">
+    <div class="mb-3">
+      <label class="form-label">Aktuelles Contest-Jahr</label>
+      <input type="number" class="form-control" name="current_contest_year" value="{{ settings.current_contest_year }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Legacy-Jahre (kommagetrennt, z.B. 2025,2024)</label>
+      <input type="text" class="form-control" name="legacy_years" value="{{ settings.legacy_years | join(',') }}">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Voting End DateTime (ISO, lokal) </label>
+      <input type="text" class="form-control" name="voting_end_at" value="{{ settings.voting_end_at }}" placeholder="2026-12-31T23:59:59">
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Speichern</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('main.upload') }}">Zurück zum Upload</a>
+      <a class="btn btn-outline-dark" href="{{ url_for('main.contest_year', year=settings.current_contest_year) }}">Zur Live-Seite</a>
+    </div>
+  </form>
+</body>
+</html>

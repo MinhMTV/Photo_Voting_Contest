@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 from flask import send_from_directory
@@ -15,8 +16,37 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _settings_path() -> str:
+    return os.path.join(current_app.instance_path, 'admin_settings.json')
+
+
+def get_runtime_settings() -> dict:
+    defaults = {
+        'current_contest_year': int(current_app.config.get('CURRENT_CONTEST_YEAR', 2026)),
+        'legacy_years': current_app.config.get('LEGACY_CONTEST_YEARS', [2025]),
+        'voting_end_at': current_app.config.get('VOTING_END_AT', '2026-12-31T23:59:59')
+    }
+    path = _settings_path()
+    if not os.path.exists(path):
+        return defaults
+
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            stored = json.load(f)
+            defaults.update(stored or {})
+    except Exception:
+        return defaults
+
+    return defaults
+
+
+def save_runtime_settings(data: dict) -> None:
+    with open(_settings_path(), 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 def current_year() -> int:
-    return int(current_app.config.get('CURRENT_CONTEST_YEAR', 2026))
+    return int(get_runtime_settings().get('current_contest_year', 2026))
 
 
 def upload_folder_for_year(year: int) -> str:
@@ -72,7 +102,8 @@ def contest_year(year: int):
     voted_ids = [row['image_id'] for row in voted]
     votes_left = max(0, 3 - len(voted_ids))
 
-    legacy_years = current_app.config.get('LEGACY_CONTEST_YEARS', [2024])
+    settings = get_runtime_settings()
+    legacy_years = settings.get('legacy_years', [2025])
 
     return render_template(
         'index_casino_2025.html',
@@ -81,7 +112,7 @@ def contest_year(year: int):
         votes_left=votes_left,
         year=year,
         legacy_years=legacy_years,
-        voting_end_at=current_app.config.get('VOTING_END_AT')
+        voting_end_at=settings.get('voting_end_at')
     )
 
 
@@ -167,6 +198,47 @@ def upload():
     return render_template('upload.html', images=images, current_year=current_year())
 
 
+@bp.route('/admin/settings', methods=['GET', 'POST'])
+def admin_settings():
+    if not session.get('admin'):
+        return redirect(url_for('main.login'))
+
+    settings = get_runtime_settings()
+
+    if request.method == 'POST':
+        selected_year = int(request.form.get('current_contest_year', settings.get('current_contest_year', 2026)))
+        voting_end_at = request.form.get('voting_end_at', settings.get('voting_end_at'))
+        legacy_raw = request.form.get('legacy_years', '')
+
+        legacy_years = []
+        for token in legacy_raw.split(','):
+            token = token.strip()
+            if token.isdigit():
+                y = int(token)
+                if y != selected_year:
+                    legacy_years.append(y)
+
+        if not legacy_years:
+            # fallback to previous year
+            legacy_years = [selected_year - 1]
+
+        new_settings = {
+            'current_contest_year': selected_year,
+            'legacy_years': sorted(set(legacy_years), reverse=True),
+            'voting_end_at': voting_end_at
+        }
+        save_runtime_settings(new_settings)
+
+        # Ensure year folders exist
+        upload_folder_for_year(selected_year)
+        for y in new_settings['legacy_years']:
+            upload_folder_for_year(int(y))
+
+        return redirect(url_for('main.admin_settings'))
+
+    return render_template('admin_settings.html', settings=settings)
+
+
 @bp.route('/update-images', methods=['POST'])
 def update_images():
     if not session.get('admin'):
@@ -233,8 +305,10 @@ def results():
 
 @bp.route('/public-results')
 def public_results_legacy():
-    # Keep existing endpoint for old integrations (2024 style)
-    return redirect(url_for('main.public_results_year', year=2024))
+    # Keep existing endpoint for old integrations (redirect to latest legacy year)
+    settings = get_runtime_settings()
+    legacy_years = settings.get('legacy_years', [current_year() - 1])
+    return redirect(url_for('main.public_results_year', year=int(legacy_years[0])))
 
 
 @bp.route('/public-results/<int:year>')

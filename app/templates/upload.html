@@ -13,6 +13,7 @@
 
     <h1 class="mb-1">📁 Bilder verwalten (Adminbereich)</h1>
     <p class="text-muted">Aktuelles Contest-Jahr: <strong>{{ current_year }}</strong></p>
+    <p><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.admin_settings') }}">⚙️ Contest Settings</a></p>
 
     <form method="POST" enctype="multipart/form-data" class="mb-4">
         <input type="hidden" name="contest_year" value="{{ current_year }}">
