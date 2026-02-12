@@ -50,7 +50,7 @@
                 </div>
                 <div class="slot-title">{{ image.uploader or 'Anonymous Player' }}</div>
                 <p class="small text-warning-emphasis">{{ image.description or '' }}</p>
-                <button class="btn btn-sm vote-button {% if image.id in voted_ids %}btn-warning{% else %}btn-outline-warning{% endif %}" data-image-id="{{ image.id }}" data-voted="{{ 'true' if image.id in voted_ids else 'false' }}">{% if image.id in voted_ids %}Gewaehlt{% else %}Waehlen{% endif %}</button>
+                <button class="btn btn-sm vote-button {% if image.id in voted_ids %}btn-warning{% else %}btn-outline-warning{% endif %}" data-image-id="{{ image.id }}" data-voted="{{ 'true' if image.id in voted_ids else 'false' }}">{% if image.id in voted_ids %}💥 Gepusht{% else %}🔥 Pushen{% endif %}</button>
             </div>
         </div>
         {% endfor %}
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.dataset.voted = isVoted ? 'false' : 'true';
             btn.classList.toggle('btn-warning');
             btn.classList.toggle('btn-outline-warning');
-            btn.textContent = isVoted ? 'Waehlen' : 'Gewaehlt';
+            btn.textContent = isVoted ? '🔥 Pushen' : '💥 Gepusht';
 
             const left = Math.max(0, maxVotes - data.vote_count);
             document.querySelector('.chip').innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;

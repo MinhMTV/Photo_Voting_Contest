@@ -42,6 +42,16 @@ def init_db():
             contest_year INTEGER DEFAULT 2025,
             UNIQUE(image_id, voter_session_id)
         );
+
+        CREATE TABLE IF NOT EXISTS stickers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            contest_year INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            sort_order INTEGER DEFAULT 0,
+            active INTEGER DEFAULT 1,
+            created_at TEXT,
+            UNIQUE(contest_year, filename)
+        );
     ''')
 
     # Lightweight migration for existing DBs

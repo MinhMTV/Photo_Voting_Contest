@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sticker Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#0f1220; color:#ecf0ff; }
+    .panel { background:#171b2f; border:1px solid #2d3559; border-radius:14px; }
+    .muted { color:#9fa9d9; }
+    .sticker-card img { width:100%; height:100px; object-fit:contain; background:#0f1220; border-radius:8px; }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h3 mb-1">Sticker Admin</h1>
+      <p class="muted mb-0">Jahr {{ year }} · Upload einzeln oder als ZIP · Reihenfolge per Drag & Drop.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.upload') }}">Upload Board</a>
+      <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.admin_settings') }}">Contest Settings</a>
+    </div>
+  </div>
+
+  <form method="GET" class="panel p-3 mb-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Jahr</label>
+        <input type="number" class="form-control" name="year" value="{{ year }}">
+      </div>
+      <div class="col-md-3 d-grid">
+        <button class="btn btn-primary" type="submit">Jahr laden</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <form method="POST" enctype="multipart/form-data" class="panel p-3">
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="action" value="upload_single">
+        <label class="form-label">Einzelupload / Mehrfachauswahl</label>
+        <input type="file" class="form-control mb-2" name="files" multiple accept="image/*" required>
+        <button class="btn btn-success" type="submit">Hochladen</button>
+      </form>
+    </div>
+    <div class="col-md-6">
+      <form method="POST" enctype="multipart/form-data" class="panel p-3">
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="action" value="upload_zip">
+        <label class="form-label">Bulk Upload (ZIP)</label>
+        <input type="file" class="form-control mb-2" name="zip_file" accept=".zip" required>
+        <button class="btn btn-warning" type="submit">ZIP importieren</button>
+      </form>
+    </div>
+  </div>
+
+  <form method="POST" class="panel p-3">
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="action" value="save_order">
+    <input type="hidden" id="orderInput" name="order" value="">
+
+    <div id="grid" class="row g-3">
+      {% for s in stickers %}
+      <div class="col-md-3 sticker-card" data-id="{{ s.id }}" draggable="true">
+        <div class="p-2 border rounded h-100">
+          <img src="{{ url_for('main.sticker_year', year=year, filename=s.filename) }}" alt="{{ s.filename }}">
+          <div class="small mt-2 text-truncate">{{ s.filename }}</div>
+          <div class="form-check mt-1">
+            <input class="form-check-input" type="checkbox" name="active_{{ s.id }}" id="active_{{ s.id }}" {% if s.active %}checked{% endif %}>
+            <label class="form-check-label" for="active_{{ s.id }}">Aktiv</label>
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-sm btn-outline-danger" name="action" value="delete" formaction="{{ url_for('main.admin_stickers', year=year) }}" formmethod="POST" onclick="document.getElementById('deleteStickerId').value='{{ s.id }}'">Löschen</button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="sticker_id" id="deleteStickerId" value="">
+
+    <div class="mt-3">
+      <button class="btn btn-primary" type="submit">Reihenfolge + Aktiv-Status speichern</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const grid = document.getElementById('grid');
+let dragging = null;
+
+for (const item of grid.querySelectorAll('.sticker-card')) {
+  item.addEventListener('dragstart', () => dragging = item);
+  item.addEventListener('dragover', (e) => e.preventDefault());
+  item.addEventListener('drop', () => {
+    if (!dragging || dragging === item) return;
+    const items = [...grid.children];
+    const dragIndex = items.indexOf(dragging);
+    const dropIndex = items.indexOf(item);
+    if (dragIndex < dropIndex) {
+      item.after(dragging);
+    } else {
+      item.before(dragging);
+    }
+    setOrder();
+  });
+}
+
+function setOrder() {
+  const ids = [...grid.querySelectorAll('.sticker-card')].map(el => el.dataset.id);
+  document.getElementById('orderInput').value = ids.join(',');
+}
+
+setOrder();
+</script>
+</body>
+</html>

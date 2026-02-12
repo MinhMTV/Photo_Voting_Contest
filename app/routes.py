@@ -1,5 +1,6 @@
 import json
 import os
+import zipfile
 from datetime import datetime
 from flask import send_from_directory
 
@@ -56,15 +57,32 @@ def upload_folder_for_year(year: int) -> str:
     return path
 
 
-def sticker_folder_for_year(year: int) -> str | None:
+def sticker_folder_for_year(year: int) -> str:
     base_static = current_app.static_folder
     preferred = os.path.join(base_static, f'stickers_{year}')
-    if os.path.isdir(preferred):
-        return preferred
-    fallback = os.path.join(base_static, 'stickers')
-    if os.path.isdir(fallback):
-        return fallback
-    return None
+    os.makedirs(preferred, exist_ok=True)
+    return preferred
+
+
+def ensure_sticker_records_for_year(year: int) -> None:
+    db = get_db()
+    folder = sticker_folder_for_year(year)
+    files = [f for f in os.listdir(folder) if allowed_file(f)]
+    for filename in files:
+        exists = db.execute(
+            'SELECT id FROM stickers WHERE contest_year = ? AND filename = ?',
+            (year, filename)
+        ).fetchone()
+        if not exists:
+            max_sort = db.execute(
+                'SELECT COALESCE(MAX(sort_order), 0) FROM stickers WHERE contest_year = ?',
+                (year,)
+            ).fetchone()[0]
+            db.execute(
+                'INSERT INTO stickers (contest_year, filename, sort_order, active, created_at) VALUES (?, ?, ?, 1, ?)',
+                (year, filename, max_sort + 1, datetime.now().isoformat())
+            )
+    db.commit()
 
 
 @bp.route('/')
@@ -80,13 +98,15 @@ def media_year(year: int, filename: str):
 @bp.route('/sticker/<int:year>/<path:filename>')
 def sticker_year(year: int, filename: str):
     folder = sticker_folder_for_year(year)
-    if not folder:
-        return ('Not Found', 404)
     return send_from_directory(folder, filename)
 
 
 @bp.route('/contest/<int:year>')
 def contest_year(year: int):
+    # Rule: every non-active year redirects to that year's public results
+    if year != current_year():
+        return redirect(url_for('main.public_results_year', year=year))
+
     db = get_db()
 
     images = db.execute(
@@ -231,12 +251,83 @@ def admin_settings():
 
         # Ensure year folders exist
         upload_folder_for_year(selected_year)
+        sticker_folder_for_year(selected_year)
         for y in new_settings['legacy_years']:
             upload_folder_for_year(int(y))
+            sticker_folder_for_year(int(y))
 
         return redirect(url_for('main.admin_settings'))
 
     return render_template('admin_settings.html', settings=settings)
+
+
+@bp.route('/admin/stickers', methods=['GET', 'POST'])
+def admin_stickers():
+    if not session.get('admin'):
+        return redirect(url_for('main.login'))
+
+    db = get_db()
+    year = int(request.args.get('year', request.form.get('year', current_year())))
+    folder = sticker_folder_for_year(year)
+
+    if request.method == 'POST':
+        action = request.form.get('action', 'upload')
+
+        if action == 'upload_single':
+            files = request.files.getlist('files')
+            for file in files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(folder, filename))
+
+        elif action == 'upload_zip':
+            zip_file = request.files.get('zip_file')
+            if zip_file and zip_file.filename.lower().endswith('.zip'):
+                with zipfile.ZipFile(zip_file.stream) as zf:
+                    for entry in zf.infolist():
+                        if entry.is_dir():
+                            continue
+                        entry_name = os.path.basename(entry.filename)
+                        if not entry_name or not allowed_file(entry_name):
+                            continue
+                        safe_name = secure_filename(entry_name)
+                        with zf.open(entry) as src, open(os.path.join(folder, safe_name), 'wb') as dst:
+                            dst.write(src.read())
+
+        elif action == 'save_order':
+            order_csv = request.form.get('order', '')
+            order_ids = [int(x) for x in order_csv.split(',') if x.strip().isdigit()]
+            for idx, sticker_id in enumerate(order_ids, start=1):
+                db.execute(
+                    'UPDATE stickers SET sort_order = ? WHERE id = ? AND contest_year = ?',
+                    (idx, sticker_id, year)
+                )
+
+            for sticker in db.execute('SELECT id FROM stickers WHERE contest_year = ?', (year,)).fetchall():
+                active_val = 1 if request.form.get(f'active_{sticker["id"]}') else 0
+                db.execute('UPDATE stickers SET active = ? WHERE id = ?', (active_val, sticker['id']))
+
+            db.commit()
+
+        elif action == 'delete':
+            sticker_id = int(request.form.get('sticker_id', 0))
+            row = db.execute('SELECT filename FROM stickers WHERE id = ? AND contest_year = ?', (sticker_id, year)).fetchone()
+            if row:
+                file_path = os.path.join(folder, row['filename'])
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                db.execute('DELETE FROM stickers WHERE id = ?', (sticker_id,))
+                db.commit()
+
+        ensure_sticker_records_for_year(year)
+        return redirect(url_for('main.admin_stickers', year=year))
+
+    ensure_sticker_records_for_year(year)
+    stickers = db.execute(
+        'SELECT * FROM stickers WHERE contest_year = ? ORDER BY sort_order ASC, id ASC',
+        (year,)
+    ).fetchall()
+    return render_template('admin_stickers.html', year=year, stickers=stickers, current_year=current_year())
 
 
 @bp.route('/update-images', methods=['POST'])
@@ -304,7 +395,7 @@ def results():
 
 
 @bp.route('/public-results')
-def public_results_legacy():
+def public_results():
     # Keep existing endpoint for old integrations (redirect to latest legacy year)
     settings = get_runtime_settings()
     legacy_years = settings.get('legacy_years', [current_year() - 1])
@@ -344,41 +435,19 @@ def toggle_publish():
     return redirect(url_for('main.results'))
 
 
-def _sticker_index(filename: str) -> int | None:
-    base = os.path.splitext(filename)[0]
-    return int(base) if base.isdigit() else None
-
-
 @bp.route('/api/stickers')
 def list_stickers():
-    # Backward compatible default (all sticker files)
-    sticker_folder = os.path.join(current_app.static_folder, 'stickers')
-    files = [f for f in os.listdir(sticker_folder) if f.endswith('.webp')]
-    return jsonify(sorted(files))
+    # Backward compatible default for current year
+    return list_stickers_for_year(current_year())
 
 
 @bp.route('/api/stickers/<int:year>')
 def list_stickers_for_year(year: int):
-    folder = sticker_folder_for_year(year)
-    if not folder:
-        return jsonify([])
+    db = get_db()
+    ensure_sticker_records_for_year(year)
 
-    files = [f for f in os.listdir(folder) if f.endswith('.webp')]
-
-    # If per-year folders exist (stickers_2026, stickers_2025, ...), return all from that folder.
-    if os.path.basename(folder).startswith('stickers_'):
-        return jsonify(sorted(files))
-
-    # Fallback compatibility for old single-folder setup with numeric split.
-    indexed: list[tuple[int, str]] = []
-    for f in files:
-        idx = _sticker_index(f)
-        if idx is not None:
-            indexed.append((idx, f))
-
-    if year <= 2025:
-        filtered = [name for idx, name in indexed if idx <= 44]
-    else:
-        filtered = [name for idx, name in indexed if idx >= 45]
-
-    return jsonify(sorted(filtered, key=lambda x: int(os.path.splitext(x)[0])))
+    rows = db.execute(
+        'SELECT filename FROM stickers WHERE contest_year = ? AND active = 1 ORDER BY sort_order ASC, id ASC',
+        (year,)
+    ).fetchall()
+    return jsonify([r['filename'] for r in rows])

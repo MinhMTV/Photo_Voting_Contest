@@ -20,6 +20,7 @@
     </div>
     <div class="d-flex gap-2">
       <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.upload') }}">Upload Board</a>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_stickers', year=settings.current_contest_year) }}">Sticker Admin</a>
       <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.contest_year', year=settings.current_contest_year) }}">Live Seite</a>
     </div>
   </div>

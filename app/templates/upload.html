@@ -23,6 +23,7 @@
         </div>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.admin_settings') }}">Contest Settings</a>
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_stickers', year=current_year) }}">Sticker Admin</a>
             <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.contest_year', year=current_year) }}">Zur Galerie</a>
             <a class="btn btn-outline-warning btn-sm" href="{{ url_for('main.results') }}">Ranking</a>
             <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.logout') }}">Logout</a>
