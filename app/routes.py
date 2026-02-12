@@ -7,7 +7,11 @@ from flask import send_from_directory
 from flask import Blueprint, render_template, request, redirect, url_for, session, current_app, jsonify
 from werkzeug.utils import secure_filename
 
-from .db import get_db
+try:
+    from .db import get_db
+except ImportError:
+    # Fallback for direct module execution (e.g. python app/routes.py)
+    from db import get_db
 
 bp = Blueprint('main', __name__)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
