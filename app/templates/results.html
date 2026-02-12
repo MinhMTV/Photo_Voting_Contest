@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Ranking – Fotowettbewerb</title>
+    <title>Ranking â€“ Fotowettbewerb</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { padding-top: 60px; }
@@ -29,14 +29,14 @@
 <body>
 
 <div class="container">
-    <h1 class="mb-4">📊 Aktuelles Ranking</h1>
-    <p><strong>👥 Wähler:innen:</strong> {{ voters }} | <strong>🗳️ Gesamtstimmen:</strong> {{ total_votes }}</p>
+    <h1 class="mb-4">ðŸ“Š Aktuelles Ranking</h1>
+    <p><strong>ðŸ‘¥ WÃ¤hler:innen:</strong> {{ voters }} | <strong>ðŸ—³ï¸ Gesamtstimmen:</strong> {{ total_votes }}</p>
 
     <form method="POST" class="mb-3">
     {% if show_stats %}
-        <button type="submit" name="show_stats" value="0" class="btn btn-outline-secondary">📉 Statistik verbergen</button>
+        <button type="submit" name="show_stats" value="0" class="btn btn-outline-secondary">ðŸ“‰ Statistik verbergen</button>
     {% else %}
-        <button type="submit" name="show_stats" value="1" class="btn btn-outline-primary">📈 Statistik anzeigen</button>
+        <button type="submit" name="show_stats" value="1" class="btn btn-outline-primary">ðŸ“ˆ Statistik anzeigen</button>
     {% endif %}
 </form>
 
@@ -44,7 +44,7 @@
     {% for image in top_images %}
     <div class="col-12 col-sm-6 col-md-4">
         <div class="image-box">
-            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="Bild">
+            <img src="{{ url_for('main.media_year', year=image.contest_year, filename=image.filename) }}" alt="Bild">
 
             {% if image.uploader %}
                 <p class="text-muted small mt-2"><strong>{{ image.uploader }}</strong></p>
@@ -55,9 +55,9 @@
             {% endif %}
 
             {% if show_stats %}
-                <p class="vote-count">✅ Stimmen: {{ image.vote_count }}</p>
+                <p class="vote-count">âœ… Stimmen: {{ image.vote_count }}</p>
             {% else %}
-                <p class="vote-count">✅ Stimmen: –</p>
+                <p class="vote-count">âœ… Stimmen: â€“</p>
             {% endif %}
         </div>
     </div>
@@ -65,13 +65,13 @@
 </div>
 
     <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-        <a href="{{ url_for('main.upload') }}" class="btn btn-secondary">🔙 Zurück zum Adminbereich</a>
-        <a href="{{ url_for('main.public_results') }}" target="_blank" class="btn btn-outline-primary ms-2">🌍 Öffentliches Ranking ansehen</a>
+        <a href="{{ url_for('main.upload') }}" class="btn btn-secondary">ðŸ”™ ZurÃ¼ck zum Adminbereich</a>
+        <a href="{{ url_for('main.public_results') }}" target="_blank" class="btn btn-outline-primary ms-2">ðŸŒ Ã–ffentliches Ranking ansehen</a>
         <form method="POST" action="{{ url_for('main.toggle_publish') }}">
             {% if published %}
-                <button type="submit" name="action" value="hide" class="btn btn-warning">🔒 Veröffentlichung zurücknehmen</button>
+                <button type="submit" name="action" value="hide" class="btn btn-warning">ðŸ”’ VerÃ¶ffentlichung zurÃ¼cknehmen</button>
             {% else %}
-                <button type="submit" name="action" value="show" class="btn btn-success">🚀 Ergebnisse veröffentlichen</button>
+                <button type="submit" name="action" value="show" class="btn btn-success">ðŸš€ Ergebnisse verÃ¶ffentlichen</button>
             {% endif %}
         </form>
     </div>
@@ -85,7 +85,7 @@
         // Sortieren nach vote_count
         entries.sort((a, b) => b.dataset.votes - a.dataset.votes);
 
-        // Entfernen und neu anhängen
+        // Entfernen und neu anhÃ¤ngen
         entries.forEach(entry => {
             const countSpan = entry.querySelector('.vote-number');
             countSpan.textContent = entry.dataset.votes;

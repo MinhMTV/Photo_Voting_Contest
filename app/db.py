@@ -1,3 +1,5 @@
+import os
+import shutil
 import sqlite3
 import click
 from flask import current_app, g
@@ -46,11 +48,31 @@ def init_db():
     _ensure_column(db, 'images', 'contest_year', 'contest_year INTEGER DEFAULT 2025')
     _ensure_column(db, 'votes', 'contest_year', 'contest_year INTEGER DEFAULT 2025')
 
-    # Backfill legacy rows (existing contest before 2025 is treated as 2024)
-    db.execute('UPDATE images SET contest_year = 2024 WHERE contest_year IS NULL OR contest_year = 0')
-    db.execute('UPDATE votes SET contest_year = 2024 WHERE contest_year IS NULL OR contest_year = 0')
+    # Backfill legacy rows (existing previous contest is treated as 2025)
+    db.execute('UPDATE images SET contest_year = 2025 WHERE contest_year IS NULL OR contest_year = 0')
+    db.execute('UPDATE votes SET contest_year = 2025 WHERE contest_year IS NULL OR contest_year = 0')
 
     db.commit()
+
+
+def migrate_uploads_to_year_dirs(default_legacy_year: int = 2025):
+    """Move legacy files from static/uploads to static/uploads_<year> if needed."""
+    db = get_db()
+    root = current_app.root_path
+    legacy_uploads = os.path.join(root, 'static', 'uploads')
+    if not os.path.isdir(legacy_uploads):
+        return
+
+    rows = db.execute('SELECT filename, COALESCE(contest_year, ?) as contest_year FROM images', (default_legacy_year,)).fetchall()
+    for row in rows:
+        filename = row['filename']
+        year = int(row['contest_year'] or default_legacy_year)
+        target_dir = os.path.join(root, f'static/uploads_{year}')
+        os.makedirs(target_dir, exist_ok=True)
+        src = os.path.join(legacy_uploads, filename)
+        dst = os.path.join(target_dir, filename)
+        if os.path.exists(src) and not os.path.exists(dst):
+            shutil.move(src, dst)
 
 @click.command('init-db')
 @with_appcontext

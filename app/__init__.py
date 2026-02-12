@@ -12,21 +12,25 @@ def create_app():
         SECRET_KEY=os.getenv("SECRET_KEY", "dev123"),
         UPLOAD_FOLDER=os.path.join(app.root_path, 'static/uploads'),
         DATABASE=os.path.join(app.instance_path, 'votes.db'),
-        CURRENT_CONTEST_YEAR=int(os.getenv("CURRENT_CONTEST_YEAR", "2025")),
-        LEGACY_CONTEST_YEARS=[2024],
-        VOTING_END_AT=os.getenv("VOTING_END_AT", "2025-12-31T23:59:59")
+        CURRENT_CONTEST_YEAR=int(os.getenv("CURRENT_CONTEST_YEAR", "2026")),
+        LEGACY_CONTEST_YEARS=[2025],
+        VOTING_END_AT=os.getenv("VOTING_END_AT", "2026-12-31T23:59:59")
     )
 
     load_dotenv()
     # Ordner sicherstellen
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.instance_path, exist_ok=True)
+    os.makedirs(os.path.join(app.root_path, f"static/uploads_{app.config['CURRENT_CONTEST_YEAR']}"), exist_ok=True)
+    for y in app.config.get('LEGACY_CONTEST_YEARS', []):
+        os.makedirs(os.path.join(app.root_path, f"static/uploads_{y}"), exist_ok=True)
 
     # DB initialisieren + Migrationen sicher ausführen
     from . import db
     db.init_app(app)
     with app.app_context():
         db.init_db()
+        db.migrate_uploads_to_year_dirs(default_legacy_year=2025)
 
     # Routen registrieren
     from . import routes

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from flask import send_from_directory
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, current_app, jsonify
 from werkzeug.utils import secure_filename
@@ -15,12 +16,43 @@ def allowed_file(filename):
 
 
 def current_year() -> int:
-    return int(current_app.config.get('CURRENT_CONTEST_YEAR', 2025))
+    return int(current_app.config.get('CURRENT_CONTEST_YEAR', 2026))
+
+
+def upload_folder_for_year(year: int) -> str:
+    base_static = current_app.static_folder
+    path = os.path.join(base_static, f'uploads_{year}')
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def sticker_folder_for_year(year: int) -> str | None:
+    base_static = current_app.static_folder
+    preferred = os.path.join(base_static, f'stickers_{year}')
+    if os.path.isdir(preferred):
+        return preferred
+    fallback = os.path.join(base_static, 'stickers')
+    if os.path.isdir(fallback):
+        return fallback
+    return None
 
 
 @bp.route('/')
 def root():
     return redirect(url_for('main.contest_year', year=current_year()))
+
+
+@bp.route('/media/<int:year>/<path:filename>')
+def media_year(year: int, filename: str):
+    return send_from_directory(upload_folder_for_year(year), filename)
+
+
+@bp.route('/sticker/<int:year>/<path:filename>')
+def sticker_year(year: int, filename: str):
+    folder = sticker_folder_for_year(year)
+    if not folder:
+        return ('Not Found', 404)
+    return send_from_directory(folder, filename)
 
 
 @bp.route('/contest/<int:year>')
@@ -119,10 +151,11 @@ def upload():
         files = request.files.getlist('files')
         year = int(request.form.get('contest_year', current_year()))
 
+        target_upload_folder = upload_folder_for_year(year)
         for file in files:
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                file.save(os.path.join(target_upload_folder, filename))
                 db.execute(
                     'INSERT INTO images (filename, uploaded_at, visible, contest_year) VALUES (?, ?, ?, ?)',
                     (filename, datetime.now().isoformat(), 1, year)
@@ -163,9 +196,9 @@ def delete_image(image_id):
         return redirect(url_for('main.login'))
 
     db = get_db()
-    image = db.execute('SELECT filename FROM images WHERE id = ?', (image_id,)).fetchone()
+    image = db.execute('SELECT filename, contest_year FROM images WHERE id = ?', (image_id,)).fetchone()
     if image:
-        image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image['filename'])
+        image_path = os.path.join(upload_folder_for_year(int(image['contest_year'] or current_year())), image['filename'])
         if os.path.exists(image_path):
             os.remove(image_path)
 
@@ -252,20 +285,26 @@ def list_stickers():
 
 @bp.route('/api/stickers/<int:year>')
 def list_stickers_for_year(year: int):
-    sticker_folder = os.path.join(current_app.static_folder, 'stickers')
-    files = [f for f in os.listdir(sticker_folder) if f.endswith('.webp')]
+    folder = sticker_folder_for_year(year)
+    if not folder:
+        return jsonify([])
 
+    files = [f for f in os.listdir(folder) if f.endswith('.webp')]
+
+    # If per-year folders exist (stickers_2026, stickers_2025, ...), return all from that folder.
+    if os.path.basename(folder).startswith('stickers_'):
+        return jsonify(sorted(files))
+
+    # Fallback compatibility for old single-folder setup with numeric split.
     indexed: list[tuple[int, str]] = []
     for f in files:
         idx = _sticker_index(f)
         if idx is not None:
             indexed.append((idx, f))
 
-    if year <= 2024:
-        # Legacy set for 2024 and older contests
+    if year <= 2025:
         filtered = [name for idx, name in indexed if idx <= 44]
     else:
-        # New sticker set starting at 45 for 2025+
         filtered = [name for idx, name in indexed if idx >= 45]
 
     return jsonify(sorted(filtered, key=lambda x: int(os.path.splitext(x)[0])))
