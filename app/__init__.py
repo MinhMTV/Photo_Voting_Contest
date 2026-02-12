@@ -11,7 +11,9 @@ def create_app():
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "admin123"),
         SECRET_KEY=os.getenv("SECRET_KEY", "dev123"),
         UPLOAD_FOLDER=os.path.join(app.root_path, 'static/uploads'),
-        DATABASE=os.path.join(app.instance_path, 'votes.db')
+        DATABASE=os.path.join(app.instance_path, 'votes.db'),
+        CURRENT_CONTEST_YEAR=int(os.getenv("CURRENT_CONTEST_YEAR", "2025")),
+        LEGACY_CONTEST_YEARS=[2024]
     )
 
     load_dotenv()
