@@ -61,10 +61,21 @@ def upload_folder_for_year(year: int) -> str:
     return path
 
 
-def sticker_folder_for_year(year: int) -> str:
+def sticker_folder_for_year(year: int, create: bool = False) -> str:
     base_static = current_app.static_folder
     preferred = os.path.join(base_static, f'stickers_{year}')
-    os.makedirs(preferred, exist_ok=True)
+
+    if create:
+        os.makedirs(preferred, exist_ok=True)
+        return preferred
+
+    if os.path.isdir(preferred) and any(allowed_file(f) for f in os.listdir(preferred)):
+        return preferred
+
+    legacy = os.path.join(base_static, 'stickers')
+    if os.path.isdir(legacy):
+        return legacy
+
     return preferred
 
 
@@ -138,6 +149,23 @@ def contest_year(year: int):
         legacy_years=legacy_years,
         voting_end_at=settings.get('voting_end_at')
     )
+
+
+@bp.route('/duel/<int:year>')
+def duel_year(year: int):
+    if year != current_year():
+        return redirect(url_for('main.public_results_year', year=year))
+
+    db = get_db()
+    candidates = db.execute(
+        'SELECT * FROM images WHERE visible = 1 AND contest_year = ? ORDER BY RANDOM() LIMIT 2',
+        (year,)
+    ).fetchall()
+
+    if len(candidates) < 2:
+        return redirect(url_for('main.contest_year', year=year))
+
+    return render_template('duel.html', year=year, a=candidates[0], b=candidates[1])
 
 
 @bp.route('/vote/<int:image_id>', methods=['POST'])
@@ -255,10 +283,10 @@ def admin_settings():
 
         # Ensure year folders exist
         upload_folder_for_year(selected_year)
-        sticker_folder_for_year(selected_year)
+        sticker_folder_for_year(selected_year, create=True)
         for y in new_settings['legacy_years']:
             upload_folder_for_year(int(y))
-            sticker_folder_for_year(int(y))
+            sticker_folder_for_year(int(y), create=True)
 
         return redirect(url_for('main.admin_settings'))
 
@@ -272,7 +300,7 @@ def admin_stickers():
 
     db = get_db()
     year = int(request.args.get('year', request.form.get('year', current_year())))
-    folder = sticker_folder_for_year(year)
+    folder = sticker_folder_for_year(year, create=True)
 
     if request.method == 'POST':
         action = request.form.get('action', 'upload')
