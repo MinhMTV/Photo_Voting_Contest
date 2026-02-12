@@ -5,32 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Contest Settings</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body{background:#0f1220;color:#ecf0ff}
+    .panel{background:#171b2f;border:1px solid #2d3559;border-radius:14px}
+    .muted{color:#9fa9d9}
+  </style>
 </head>
-<body class="container py-4">
-  <h1>⚙️ Contest Settings</h1>
-  <p class="text-muted">Hier stellst du aktuelles Contest-Jahr, Legacy-Jahre und Voting-Enddatum ein.</p>
-
-  <form method="POST" class="card p-3">
-    <div class="mb-3">
-      <label class="form-label">Aktuelles Contest-Jahr</label>
-      <input type="number" class="form-control" name="current_contest_year" value="{{ settings.current_contest_year }}" required>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h3 mb-1">Contest Settings</h1>
+      <p class="muted mb-0">Steuert aktives Jahr, Legacy-Navigation und Voting-Timer.</p>
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">Legacy-Jahre (kommagetrennt, z.B. 2025,2024)</label>
-      <input type="text" class="form-control" name="legacy_years" value="{{ settings.legacy_years | join(',') }}">
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">Voting End DateTime (ISO, lokal) </label>
-      <input type="text" class="form-control" name="voting_end_at" value="{{ settings.voting_end_at }}" placeholder="2026-12-31T23:59:59">
-    </div>
-
     <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.upload') }}">Upload Board</a>
+      <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.contest_year', year=settings.current_contest_year) }}">Live Seite</a>
+    </div>
+  </div>
+
+  <form method="POST" class="panel p-3">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Aktuelles Contest-Jahr</label>
+        <input type="number" class="form-control" name="current_contest_year" value="{{ settings.current_contest_year }}" required>
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label">Legacy-Jahre (kommagetrennt)</label>
+        <input type="text" class="form-control" name="legacy_years" value="{{ settings.legacy_years | join(',') }}" placeholder="z.B. 2025,2024">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Voting endet am (ISO Local)</label>
+        <input type="text" class="form-control" name="voting_end_at" value="{{ settings.voting_end_at }}" placeholder="2026-12-31T23:59:59">
+      </div>
+
+      <div class="col-md-6 d-flex align-items-end">
+        <div class="alert alert-secondary w-100 mb-0">
+          Tipp: Nach Speichern keine Code-Änderung nötig – die Runtime Settings greifen sofort.
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
       <button class="btn btn-primary" type="submit">Speichern</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('main.upload') }}">Zurück zum Upload</a>
-      <a class="btn btn-outline-dark" href="{{ url_for('main.contest_year', year=settings.current_contest_year) }}">Zur Live-Seite</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('main.upload') }}">Zurück</a>
     </div>
   </form>
+</div>
 </body>
 </html>
