@@ -3,62 +3,245 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Slot Duel {{ year }}</title>
+  <title>Neon Royale Slot Duel {{ year }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background: radial-gradient(circle at top, #2a0c44, #09070f 65%); color:#ffe8b3; }
-    .machine-wrap { max-width: 1050px; margin: 18px auto; position: relative; }
-    .machine { border:3px solid #ff9f1c; border-radius:24px; padding:16px 18px 22px; background:linear-gradient(180deg,#38145c,#1a0f2d); box-shadow:0 0 30px rgba(255,174,66,.45); }
-    .machine-head { text-align:center; font-weight:800; margin-bottom:10px; color:#ffdf84; }
-    .lights { height:10px; border-radius:999px; background:linear-gradient(90deg,#ff3864,#ffe066,#4cd137,#00d2ff,#c56cf0); margin:10px 0 14px; }
-    .reels { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
-    .reel { background:#10091d; border:2px solid #ffcf66; border-radius:14px; padding:10px; box-shadow: inset 0 0 20px rgba(255,175,65,.2); }
-    .reel img { width:100%; height:250px; object-fit:cover; border-radius:10px; }
-    .name { color:#ffd87b; font-weight:700; margin-top:8px; }
-    .desc { color:#d7c9a2; font-size:.9rem; min-height:42px; }
-    .vote-btn { width:100%; border:0; border-radius:10px; padding:10px; font-weight:800; color:#fff; background:linear-gradient(90deg,#ff3864,#ff9f1c); }
-    .controls { display:flex; justify-content:center; gap:12px; margin-top:14px; }
-    .lever-box { position:absolute; right:-26px; top:120px; width:70px; text-align:center; }
-    .lever { width:16px; height:120px; margin:0 auto; border-radius:10px; background:linear-gradient(180deg,#ffe08a,#f39c12); cursor:pointer; transform-origin: top center; transition: transform .25s ease; }
-    .knob { width:40px; height:40px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 30% 30%,#fff3bf,#ff9f1c 70%); border:2px solid #ffd166; }
-    .spinning .lever { transform: rotate(28deg); }
-    @media (max-width: 900px){ .lever-box { position:static; width:auto; margin:10px auto 0; } .lever { height:70px; } .reel img { height:180px; } }
+    :root{
+      --bg:#09050f;
+      --neon-pink:#ff2ea6;
+      --neon-blue:#21d4fd;
+      --gold:#ffb347;
+      --gold-2:#ffd166;
+      --frame:#2a113f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,46,166,.25), transparent 35%),
+        radial-gradient(circle at 80% 20%, rgba(33,212,253,.2), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(255,179,71,.2), transparent 35%),
+        var(--bg);
+      color:#ffecc3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    .page{max-width:760px;margin:0 auto;padding:16px 12px 28px;}
+
+    .topline{
+      text-align:center;
+      color:#f0d8a8;
+      letter-spacing:.08em;
+      font-weight:700;
+      opacity:.9;
+      margin-top:6px;
+      text-shadow:0 0 10px rgba(255,179,71,.5);
+    }
+
+    .brand{
+      text-align:center;
+      font-size:2.4rem;
+      font-weight:900;
+      margin:6px 0 12px;
+      background:linear-gradient(90deg,#ffd166 0%, #ff2ea6 45%, #21d4fd 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-shadow:0 0 20px rgba(255,46,166,.35), 0 0 24px rgba(33,212,253,.35);
+    }
+
+    .machine-wrap{position:relative;}
+
+    .slot-machine{
+      border-radius:28px;
+      padding:12px;
+      background:linear-gradient(180deg,#44205f 0%, #220f33 100%);
+      border:3px solid #ff9f1c;
+      box-shadow:
+        0 0 0 2px rgba(255,209,102,.35) inset,
+        0 0 24px rgba(255,179,71,.45),
+        0 12px 40px rgba(0,0,0,.5);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .bulb-row{
+      height:16px;
+      border-radius:999px;
+      background:#3d183d;
+      border:1px solid rgba(255,196,102,.55);
+      padding:2px 6px;
+      display:flex;
+      gap:4px;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .bulb{
+      width:7px;height:7px;border-radius:50%;
+      background:#ffef9f;
+      box-shadow:0 0 8px #ffef9f, 0 0 16px #ff6bcb;
+      animation:blink 1.2s infinite alternate;
+    }
+    .bulb:nth-child(2n){animation-delay:.3s}
+    .bulb:nth-child(3n){animation-delay:.6s}
+    @keyframes blink{from{opacity:.45}to{opacity:1}}
+
+    .reels{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+    .reel{
+      background:linear-gradient(180deg,#140a22,#090612);
+      border:2px solid rgba(255,209,102,.8);
+      border-radius:14px;
+      padding:8px;
+      box-shadow:inset 0 0 24px rgba(255,160,80,.15);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .reel-window{
+      border-radius:10px;
+      overflow:hidden;
+      border:1px solid rgba(255,179,71,.45);
+      background:#000;
+      margin-bottom:8px;
+    }
+    .reel-window img{
+      width:100%;
+      height:180px;
+      object-fit:cover;
+      display:block;
+      transition:transform .18s linear, filter .18s linear;
+    }
+
+    .title{font-weight:800;color:#ffd47f;font-size:1rem;line-height:1.1;min-height:38px}
+    .meta{font-size:.8rem;color:#f3d49d;opacity:.85;min-height:30px;margin-top:2px}
+
+    .vote-btn{
+      width:100%;
+      border:0;
+      border-radius:10px;
+      padding:8px;
+      margin-top:8px;
+      font-weight:900;
+      letter-spacing:.03em;
+      color:#fff;
+      background:linear-gradient(180deg,#ff4d7d,#cc103f);
+      box-shadow:0 2px 0 #7f0a28, 0 0 16px rgba(255,77,125,.45);
+    }
+
+    .panel-row{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      margin:12px 2px 10px;
+    }
+    .panel-light{
+      height:14px;border-radius:999px;border:1px solid rgba(255,209,102,.6)
+    }
+    .panel-light.p1{background:linear-gradient(90deg,#ff6b6b,#ffd166)}
+    .panel-light.p2{background:linear-gradient(90deg,#43e97b,#38f9d7)}
+    .panel-light.p3{background:linear-gradient(90deg,#f093fb,#f5576c)}
+
+    .control-row{display:flex;gap:10px;justify-content:center;margin-bottom:6px}
+    .ctrl{
+      border:0;border-radius:12px;padding:8px 16px;font-weight:900;color:#2a0d3f;
+      background:linear-gradient(180deg,#ffd166,#ffb347);
+      box-shadow:0 2px 0 #ad701b, 0 0 12px rgba(255,209,102,.45);
+    }
+
+    .footer-screen{
+      height:68px;border-radius:14px;
+      border:2px solid rgba(255,179,71,.8);
+      background:linear-gradient(90deg,#2b0b2a,#1a1a44,#2b0b2a);
+      display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;
+    }
+    .footer-screen .mini{border-radius:8px;background-size:cover;background-position:center;border:1px solid rgba(255,209,102,.4)}
+
+    .lever-box{position:absolute;right:-16px;top:180px;display:flex;flex-direction:column;align-items:center;gap:8px}
+    .knob{
+      width:40px;height:40px;border-radius:50%;
+      background:radial-gradient(circle at 30% 30%, #fff8cb, #ff9f1c 70%);
+      border:2px solid #ffd166;box-shadow:0 0 12px rgba(255,179,71,.6);
+    }
+    .lever{
+      width:14px;height:120px;border-radius:8px;cursor:pointer;transform-origin:top center;
+      background:linear-gradient(180deg,#ffe08a,#f39c12);
+      box-shadow:0 0 10px rgba(255,179,71,.65);
+      transition:transform .22s ease;
+    }
+
+    .spinning .lever{transform:rotate(28deg)}
+    .spinning .reel-window img{filter:blur(2px) saturate(1.25);transform:translateY(-8px)}
+
+    .nav-actions{display:flex;justify-content:space-between;margin-top:10px;gap:8px}
+    .btn-outline-neon{
+      border:1px solid rgba(255,209,102,.75);color:#ffd98f;background:rgba(0,0,0,.25);
+    }
+
+    @media (max-width:820px){
+      .page{max-width:640px}
+      .lever-box{position:static;flex-direction:row;justify-content:center;margin-top:12px}
+      .lever{height:70px}
+      .reel-window img{height:140px}
+    }
   </style>
 </head>
 <body>
-<div class="container py-3">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h1 class="h3 mb-0">🎰 Slot Duel {{ year }}</h1>
-    <a href="{{ url_for('main.contest_year', year=year) }}" class="btn btn-outline-light btn-sm">Zurück</a>
-  </div>
+  <div class="page">
+    <div class="topline">Las Vegas × Monte Carlo</div>
+    <div class="brand">Neon Royale</div>
 
-  <div class="machine-wrap" id="machineWrap">
-    <div class="machine">
-      <div class="machine-head">Neon Royale — Pull the Lever</div>
-      <div class="lights"></div>
-      <div class="reels" id="reels">
-        {% for c in candidates %}
-        <div class="reel" data-reel-index="{{ loop.index0 }}">
-          <img src="{{ url_for('main.media_year', year=year, filename=c.filename) }}" alt="{{ c.uploader }}">
-          <div class="name">{{ c.uploader or 'Unbekannt' }}</div>
-          <div class="desc">{{ c.description or '' }}</div>
-          <button class="vote-btn duel-pick" data-id="{{ c.id }}">Vote</button>
+    <div class="machine-wrap" id="machineWrap">
+      <div class="slot-machine">
+        <div class="bulb-row">
+          {% for _ in range(42) %}<span class="bulb"></span>{% endfor %}
         </div>
-        {% endfor %}
+
+        <div class="reels" id="reels">
+          {% for c in candidates %}
+          <div class="reel">
+            <div class="reel-window"><img src="{{ url_for('main.media_year', year=year, filename=c.filename) }}" alt="{{ c.uploader }}"></div>
+            <div class="title">{{ c.uploader or 'Unbekannt' }}</div>
+            <div class="meta">{{ c.description or '' }}</div>
+            <button class="vote-btn duel-pick" data-id="{{ c.id }}">Vote</button>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="panel-row">
+          <div class="panel-light p1"></div>
+          <div class="panel-light p2"></div>
+          <div class="panel-light p3"></div>
+        </div>
+
+        <div class="control-row">
+          <button class="ctrl" id="spinBtn">Drehen</button>
+          <button class="ctrl" id="spinBtn2">Drehen</button>
+          <button class="ctrl" id="spinBtn3">Drehen</button>
+        </div>
+
+        <div class="footer-screen" id="footerScreen">
+          {% for c in candidates %}
+          <div class="mini" style="background-image:url('{{ url_for('main.media_year', year=year, filename=c.filename) }}')"></div>
+          {% endfor %}
+        </div>
       </div>
-      <div class="lights"></div>
-      <div class="controls">
-        <button class="btn btn-warning btn-sm" id="spinBtn">🎲 Drehen</button>
+
+      <div class="lever-box">
+        <div class="knob"></div>
+        <div class="lever" id="lever"></div>
       </div>
     </div>
 
-    <div class="lever-box">
-      <div class="knob"></div>
-      <div class="lever" id="lever"></div>
-      <div class="small text-warning mt-1">Einarmiger Bandit</div>
+    <div class="nav-actions">
+      <a href="{{ url_for('main.contest_year', year=year) }}" class="btn btn-sm btn-outline-neon">Zurück</a>
+      <a href="{{ url_for('main.duel_year', year=year) }}" class="btn btn-sm btn-outline-neon">Reset</a>
     </div>
   </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
 <script>
@@ -68,25 +251,23 @@ document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=
 
 const machine = document.getElementById('machineWrap');
 const lever = document.getElementById('lever');
-const spinBtn = document.getElementById('spinBtn');
+const spinBtns = [document.getElementById('spinBtn'), document.getElementById('spinBtn2'), document.getElementById('spinBtn3')].filter(Boolean);
 const reels = [...document.querySelectorAll('.reel')];
+const footerMini = [...document.querySelectorAll('#footerScreen .mini')];
 let spinning = false;
-
-function reelDataFromDom(reel){
-  const img = reel.querySelector('img');
-  return {
-    id: Number(reel.querySelector('.duel-pick').dataset.id),
-    filename: img.src,
-    uploader: reel.querySelector('.name').textContent,
-    description: reel.querySelector('.desc').textContent
-  }
-}
 
 function applyCandidateToReel(reel, c){
   reel.querySelector('img').src = `/media/{{ year }}/${c.filename}`;
-  reel.querySelector('.name').textContent = c.uploader || 'Unbekannt';
-  reel.querySelector('.desc').textContent = c.description || '';
+  reel.querySelector('.title').textContent = c.uploader || 'Unbekannt';
+  reel.querySelector('.meta').textContent = c.description || '';
   reel.querySelector('.duel-pick').dataset.id = c.id;
+}
+
+function applyFooter(candidates){
+  footerMini.forEach((m, i) => {
+    const c = candidates[i % candidates.length];
+    m.style.backgroundImage = `url('/media/{{ year }}/${c.filename}')`;
+  });
 }
 
 async function spinMachine(){
@@ -103,33 +284,27 @@ async function spinMachine(){
     return;
   }
 
-  // pool to fake slot cycling
   const pool = data.candidates;
-  const intervals = [];
+  const timers = reels.map((reel, i) => setInterval(() => {
+    const r = pool[Math.floor(Math.random() * pool.length)];
+    applyCandidateToReel(reel, r);
+  }, 85 + (i * 25)));
 
-  reels.forEach((reel, i) => {
-    const timer = setInterval(() => {
-      const random = pool[Math.floor(Math.random() * pool.length)];
-      applyCandidateToReel(reel, random);
-    }, 90 + (i * 25));
-    intervals.push(timer);
-  });
-
-  // Stop reels one by one, then set final candidates exactly
   reels.forEach((reel, i) => {
     setTimeout(() => {
-      clearInterval(intervals[i]);
+      clearInterval(timers[i]);
       applyCandidateToReel(reel, data.candidates[i]);
       if (i === reels.length - 1) {
+        applyFooter(data.candidates);
         spinning = false;
         machine.classList.remove('spinning');
       }
-    }, 900 + i * 350);
+    }, 900 + (i * 360));
   });
 }
 
 lever.addEventListener('click', spinMachine);
-spinBtn.addEventListener('click', spinMachine);
+spinBtns.forEach(b => b.addEventListener('click', spinMachine));
 
 document.body.addEventListener('click', async (e) => {
   const btn = e.target.closest('.duel-pick');
