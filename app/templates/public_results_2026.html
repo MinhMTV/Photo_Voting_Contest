@@ -105,7 +105,7 @@
 
     .slot { min-height: 120px; background: #0f0b19; border: 1px dashed #8f6a2d; border-radius: 12px; padding: 12px; }
     .reveal-card { text-align:center; position:relative; overflow:hidden; }
-    .reveal-card img { width: min(92%, 420px); max-height: 300px; object-fit: cover; border-radius: 14px; border:2px solid #f3cf87; box-shadow:0 0 20px rgba(255,212,120,.35); }
+    .reveal-card img { width: min(96%, 760px); max-height: 72vh; object-fit: contain; border-radius: 14px; border:2px solid #f3cf87; box-shadow:0 0 20px rgba(255,212,120,.35); background:#0b0610; }
 
     #winnerModal .modal-content {
       background: radial-gradient(circle at 50% 20%, #2d1235, #120817 70%);
@@ -325,7 +325,7 @@
 </div>
 
 <div class="modal fade" id="winnerModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content bg-dark text-light border-warning">
       <div class="modal-header">
         <h5 class="modal-title" id="winnerTitle">Platzierung</h5>
