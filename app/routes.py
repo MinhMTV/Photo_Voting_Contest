@@ -544,20 +544,23 @@ def public_results_year(year: int):
         LIMIT 5
     ''', (year,)).fetchall()
 
+    templates_dir = os.path.join(current_app.root_path, 'templates')
     year_template_name = f'public_results_{year}.html'
-    year_template_path = os.path.join(current_app.template_folder, year_template_name)
+    year_template_path = os.path.join(templates_dir, year_template_name)
 
     if os.path.exists(year_template_path):
         template = year_template_name
     else:
         current_template_name = f'public_results_{current_year()}.html'
-        current_template_path = os.path.join(current_app.template_folder, current_template_name)
+        current_template_path = os.path.join(templates_dir, current_template_name)
         if os.path.exists(current_template_path):
             template = current_template_name
         else:
             # Last-resort fallback to any yearly public results template
+            if not os.path.isdir(templates_dir):
+                return ('Templates directory missing', 500)
             candidates = sorted(
-                [f for f in os.listdir(current_app.template_folder) if f.startswith('public_results_') and f.endswith('.html')]
+                [f for f in os.listdir(templates_dir) if f.startswith('public_results_') and f.endswith('.html')]
             )
             if not candidates:
                 return ('No public results template found', 500)
