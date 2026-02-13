@@ -247,12 +247,12 @@ def vote(image_id):
     chip_label = (payload.get('chip_label') or '5').strip().lower()
 
     chip_map = {
-        '2': 2,
         '5': 5,
-        '10': 10,
-        '20': 20,
-        'all-in': 50,
-        'allin': 50
+        '25': 25,
+        '50': 50,
+        '100': 100,
+        'all-in': 180,
+        'allin': 180
     }
     chip_value = chip_map.get(chip_label, 5)
     if chip_label not in chip_map:
@@ -270,6 +270,10 @@ def vote(image_id):
         'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND chip_label = ?',
         (voter_session_id, contest_year, chip_label)
     ).fetchone()
+    all_in_vote = db.execute(
+        'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND chip_label IN ("all-in", "allin")',
+        (voter_session_id, contest_year)
+    ).fetchone()
 
     if vote_exists:
         # Same chip on same image => remove vote
@@ -279,6 +283,15 @@ def vote(image_id):
             # user wants to change chip on this image
             if chip_in_use and chip_in_use['id'] != vote_exists['id']:
                 return jsonify(success=False, error=f'Chip {chip_label.upper()} wurde bereits auf ein anderes Bild gesetzt'), 403
+            if chip_label in ('all-in', 'allin'):
+                other_votes = db.execute(
+                    'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ? AND id != ?',
+                    (voter_session_id, contest_year, vote_exists['id'])
+                ).fetchone()[0]
+                if other_votes > 0:
+                    return jsonify(success=False, error='All-in geht nur, wenn keine anderen Chips gesetzt sind'), 403
+            if chip_label not in ('all-in', 'allin') and all_in_vote and all_in_vote['id'] != vote_exists['id']:
+                return jsonify(success=False, error='All-in ist bereits gesetzt. Erst All-in entfernen.'), 403
             db.execute(
                 'UPDATE votes SET chip_value = ?, chip_label = ? WHERE id = ?',
                 (chip_value, chip_label, vote_exists['id'])
@@ -286,6 +299,16 @@ def vote(image_id):
     else:
         if chip_in_use:
             return jsonify(success=False, error=f'Chip {chip_label.upper()} wurde bereits benutzt'), 403
+
+        if chip_label in ('all-in', 'allin'):
+            other_votes = db.execute(
+                'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+                (voter_session_id, contest_year)
+            ).fetchone()[0]
+            if other_votes > 0:
+                return jsonify(success=False, error='All-in geht nur, wenn keine anderen Chips gesetzt sind'), 403
+        elif all_in_vote:
+            return jsonify(success=False, error='All-in ist bereits gesetzt. Erst All-in entfernen.'), 403
 
         vote_count = db.execute(
             'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
