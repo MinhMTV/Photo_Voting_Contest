@@ -655,6 +655,9 @@ def delete_image(image_id):
 @bp.route('/results')
 def results():
     # Legacy admin results page preserved
+    if not session.get('admin'):
+        return redirect(url_for('main.login'))
+
     db = get_db()
     top_images = db.execute('''
         SELECT
@@ -685,10 +688,34 @@ def results():
     total_votes = db.execute('SELECT COUNT(*) FROM votes WHERE id IS NOT NULL').fetchone()[0]
     voters = db.execute('SELECT COUNT(DISTINCT voter_session_id) FROM votes').fetchone()[0]
 
+    settings = get_runtime_settings()
+    available_years = {int(settings.get('current_contest_year', current_year()))}
+    for y in (settings.get('legacy_years', []) or []):
+        try:
+            available_years.add(int(y))
+        except Exception:
+            pass
+    db_years = db.execute('SELECT DISTINCT contest_year FROM images UNION SELECT DISTINCT contest_year FROM votes UNION SELECT DISTINCT contest_year FROM duel_votes').fetchall()
+    for row in db_years:
+        try:
+            if row[0] is not None:
+                available_years.add(int(row[0]))
+        except Exception:
+            pass
+
     flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
     published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
 
-    return render_template('results.html', top_images=top_images, voters=voters, total_votes=total_votes, published=published, show_stats=True)
+    return render_template(
+        'results.html',
+        top_images=top_images,
+        voters=voters,
+        total_votes=total_votes,
+        published=published,
+        show_stats=True,
+        current_year=current_year(),
+        available_years=sorted(available_years)
+    )
 
 
 @bp.route('/public-results')
@@ -769,6 +796,24 @@ def toggle_publish():
 
     with open(flag_path, 'w') as f:
         f.write('1' if action == 'show' else '0')
+
+    return redirect(url_for('main.results'))
+
+
+@bp.route('/admin/reset-year-votes', methods=['POST'])
+def reset_year_votes_admin():
+    if not session.get('admin'):
+        return redirect(url_for('main.login'))
+
+    try:
+        year = int(request.form.get('year', current_year()))
+    except Exception:
+        year = current_year()
+
+    db = get_db()
+    db.execute('DELETE FROM votes WHERE contest_year = ?', (year,))
+    db.execute('DELETE FROM duel_votes WHERE contest_year = ?', (year,))
+    db.commit()
 
     return redirect(url_for('main.results'))
 

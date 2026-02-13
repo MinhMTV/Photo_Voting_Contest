@@ -51,6 +51,23 @@
             {% endif %}
         </form>
     </div>
+
+    <div class="card mt-3 border-danger-subtle">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <div>
+                <div class="fw-semibold text-danger">Stimmen/Chips zurücksetzen</div>
+                <div class="small text-muted">Löscht Votes + Chip-Werte + Duell-Votes für das gewählte Jahr.</div>
+            </div>
+            <form method="POST" action="{{ url_for('main.reset_year_votes_admin') }}" class="d-flex gap-2 align-items-center" onsubmit="return confirm('Wirklich alle Stimmen/Chips für dieses Jahr löschen?');">
+                <select name="year" class="form-select form-select-sm" style="min-width: 120px;">
+                    {% for y in available_years %}
+                    <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-danger btn-sm">Reset Jahr</button>
+            </form>
+        </div>
+    </div>
 </div>
 </body>
 </html>
