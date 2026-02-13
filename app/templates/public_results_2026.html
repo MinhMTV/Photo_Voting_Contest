@@ -108,6 +108,27 @@
     #winner-stickers { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
     #winner-stickers img { position: absolute; width: 68px; opacity: .85; animation: drift 6s ease-in-out infinite; }
     @keyframes drift { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-16px) } }
+
+    .casino-flash {
+      animation: casinoPulse 1s ease-in-out 4;
+      box-shadow: 0 0 0 rgba(255,215,120,0), 0 0 30px rgba(255,215,120,.35) !important;
+    }
+    @keyframes casinoPulse {
+      0%,100% { filter: brightness(1); }
+      50% { filter: brightness(1.25); }
+    }
+    .sparkles {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 12;
+    }
+    .spark {
+      position: absolute; width: 8px; height: 8px; border-radius: 50%;
+      background: radial-gradient(circle, #fff, #ffd36a);
+      animation: sparkle 900ms ease-out forwards;
+    }
+    @keyframes sparkle {
+      from { transform: translateY(0) scale(1); opacity: 1; }
+      to { transform: translateY(-38px) scale(0.2); opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -125,6 +146,7 @@
           <div class="track-ring"></div>
           <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="thumbs-layer" id="thumbsLayer"></div></div>
           <div class="ball" id="ball"></div>
+          <div class="sparkles" id="sparkles"></div>
         </div>
         <div class="mt-3">
           <div class="badge text-bg-dark border border-warning-subtle">Nächster Platz: <span id="nextPlace">5</span></div>
@@ -183,6 +205,7 @@ let spinning = false;
 let wheelAngle = 0;
 const wheel = document.getElementById('wheel');
 const ball = document.getElementById('ball');
+const sparkles = document.getElementById('sparkles');
 const thumbsLayer = document.getElementById('thumbsLayer');
 const fieldRing = document.getElementById('fieldRing');
 const btn = document.getElementById('spinBtn');
@@ -349,8 +372,24 @@ function appendReveal(place, item) {
   const el = document.createElement('div');
   el.className = 'mb-2 p-2 rounded border border-warning-subtle bg-black';
   const n = participantNumberById.get(Number(item.id)) || '-';
-  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonymous'} · Chips ${item.vote_points || 0} · Stimmen ${item.vote_count || 0}`;
+  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonymous'} · Chips ${item.vote_points || 0}`;
   revealList.appendChild(el);
+}
+
+function casinoCelebrate() {
+  wheel.classList.add('casino-flash');
+  setTimeout(() => wheel.classList.remove('casino-flash'), 4200);
+  if (!sparkles) return;
+  sparkles.innerHTML = '';
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.style.left = `${10 + Math.random() * 80}%`;
+    s.style.top = `${40 + Math.random() * 45}%`;
+    s.style.animationDelay = `${Math.random() * 220}ms`;
+    sparkles.appendChild(s);
+  }
+  setTimeout(() => { sparkles.innerHTML = ''; }, 1200);
 }
 
 applyWheelColors();
@@ -387,8 +426,9 @@ btn.addEventListener('click', async () => {
   document.getElementById('winnerBody').innerHTML = `
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
     <div class="mt-2"><strong>#${n} ${item.uploader || 'Anonymous'}</strong></div>
-    <div class="small text-warning">Chips: ${item.vote_points || 0} · Stimmen: ${item.vote_count || 0}</div>
+    <div class="small text-warning">Chips: ${item.vote_points || 0}</div>
     <div class="small">${item.description || ''}</div>`;
+  casinoCelebrate();
   winnerModal.show();
 
   idx -= 1;
