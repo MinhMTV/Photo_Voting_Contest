@@ -1,16 +1,27 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ergebnisse {{ year }} – Roulette Finale</title>
+  <title>Ergebnisse {{ year }} â€“ Roulette Finale</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background: radial-gradient(circle at 30% 10%, #2a1b45, #0c0a12 60%); color: #f8e8bb; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: sans-serif;
+      background-image:
+        radial-gradient(circle farthest-corner at 50% 40%, #527c14, #243a0a);
+      background-size: auto;
+      background-attachment: fixed;
+      color: #f8e8bb;
+      user-select: none;
+      touch-action: pan-y;
+      -webkit-tap-highlight-color: transparent;
+    }
     .shell { max-width: 96vw; margin: 0 auto; padding: 20px; }
-    .roulette-wrap { background: #151022; border: 1px solid #8f6a2d; border-radius: 16px; padding: 20px; box-shadow: 0 0 40px rgba(255,214,123,.12); }
+    .roulette-wrap { background: rgba(10,10,10,.18); border: 1px solid #8f6a2d; border-radius: 16px; padding: 20px; box-shadow: 2px 10px 30px rgba(0,0,0,.4); }
 
-    .roulette { width: min(78vw, 680px); aspect-ratio: 1 / 1; margin: 0 auto; position: relative; }
+    .roulette { width: min(82vw, 760px); aspect-ratio: 1 / 1; margin: 0 auto; position: relative; overflow: visible; }
     .outer-ring {
       position: absolute; inset: 0; border-radius: 50%;
       background: radial-gradient(circle at 35% 30%, #9a4f35 0%, #6a2f20 45%, #431b14 75%, #2a100d 100%);
@@ -58,17 +69,6 @@
       pointer-events: none;
       background:#000;
     }
-    .landing-slot {
-      position: absolute;
-      width: clamp(30px, 4.6vw, 52px);
-      height: clamp(22px, 3.4vw, 38px);
-      border-radius: 4px;
-      border: 2px solid rgba(255,215,120,.95);
-      box-shadow: 0 0 0 2px rgba(30,20,8,.75) inset;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 6;
-    }
 
     .ball {
       width: 20px; height: 20px; border-radius: 50%;
@@ -93,8 +93,8 @@
 <body>
 <div id="winner-stickers"></div>
 <div class="shell">
-  <h1 class="text-center mb-3">🎰 Roulette Finale {{ year }}</h1>
-  <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 → 4 → 3 → 2 → 1</strong>. Drücke jedes Mal auf <strong>„Kugel setzen“</strong>.</p>
+  <h1 class="text-center mb-3">ðŸŽ° Roulette Finale {{ year }}</h1>
+  <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 â†’ 4 â†’ 3 â†’ 2 â†’ 1</strong>. DrÃ¼cke jedes Mal auf <strong>â€žKugel setzenâ€œ</strong>.</p>
 
   <div class="roulette-wrap">
     <div class="row g-4 align-items-center">
@@ -103,11 +103,11 @@
         <div class="roulette" id="roulette">
           <div class="outer-ring"></div>
           <div class="track-ring"></div>
-          <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="thumbs-layer" id="thumbsLayer"></div><div class="thumbs-layer" id="landingLayer"></div></div>
+          <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="thumbs-layer" id="thumbsLayer"></div></div>
           <div class="ball" id="ball"></div>
         </div>
         <div class="mt-3">
-          <div class="badge text-bg-dark border border-warning-subtle">Nächster Platz: <span id="nextPlace">5</span></div>
+          <div class="badge text-bg-dark border border-warning-subtle">NÃ¤chster Platz: <span id="nextPlace">5</span></div>
         </div>
         <button id="spinBtn" class="btn btn-warning mt-3">Kugel setzen</button>
       </div>
@@ -120,15 +120,15 @@
   </div>
 
   <div id="top10Section" class="mt-4 d-none">
-    <h3 class="mb-3">🏁 Gesamtübersicht Top 10</h3>
+    <h3 class="mb-3">ðŸ GesamtÃ¼bersicht Top 10</h3>
     <div class="row g-3">
       {% for image in top_10_images %}
       <div class="col-6 col-md-4 col-lg-3">
         <div class="card bg-dark text-light border-warning-subtle h-100">
           <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ image.uploader }}">
           <div class="card-body p-2">
-            <div class="small">#{{ loop.index }} · <strong>{{ image.uploader or 'Anonymous' }}</strong></div>
-            <div class="small text-warning">Chips: {{ image.vote_points or 0 }} · Stimmen: {{ image.vote_count or 0 }}</div>
+            <div class="small">#{{ loop.index }} Â· <strong>{{ image.uploader or 'Anonymous' }}</strong></div>
+            <div class="small text-warning">Chips: {{ image.vote_points or 0 }} Â· Stimmen: {{ image.vote_count or 0 }}</div>
           </div>
         </div>
       </div>
@@ -160,7 +160,6 @@ let wheelAngle = 0;
 const wheel = document.getElementById('wheel');
 const ball = document.getElementById('ball');
 const thumbsLayer = document.getElementById('thumbsLayer');
-const landingLayer = document.getElementById('landingLayer');
 const fieldRing = document.getElementById('fieldRing');
 const btn = document.getElementById('spinBtn');
 const nextPlace = document.getElementById('nextPlace');
@@ -175,7 +174,7 @@ if (!participants.length || step === 0) {
 }
 
 function colorForIndex(i) {
-  if (i === 0) return '#1f8d3f'; // ein grünes Feld
+  if (i === 0) return '#1f8d3f'; // ein grÃ¼nes Feld
   return i % 2 === 0 ? '#111' : '#ba2323';
 }
 
@@ -205,16 +204,12 @@ function findParticipantIndexByImageId(imageId) {
 function buildThumbs() {
   const wheelSize = wheel.clientWidth;
   const c = wheelSize / 2;
-  const thumbRadius = wheelSize * 0.47;
-  const landingRadius = wheelSize * 0.25;
-  const count = segmentCount();
+  const thumbRadius = wheelSize * 0.47;  const count = segmentCount();
   const segArc = (2 * Math.PI * thumbRadius) / count;
   const fieldW = Math.max(26, Math.min(56, segArc * 0.88));
   const fieldH = Math.max(18, Math.min(40, fieldW * 0.72));
 
   thumbsLayer.innerHTML = '';
-  landingLayer.innerHTML = '';
-
   participants.forEach((p, i) => {
     const angle = angleForIndex(i);
     const rad = angle * Math.PI / 180;
@@ -232,17 +227,6 @@ function buildThumbs() {
     img.style.height = `${fieldH}px`;
     img.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
     thumbsLayer.appendChild(img);
-
-    const lx = c + (Math.cos(rad) * landingRadius);
-    const ly = c + (Math.sin(rad) * landingRadius);
-    const slot = document.createElement('div');
-    slot.className = 'landing-slot';
-    slot.style.left = `${lx}px`;
-    slot.style.top = `${ly}px`;
-    slot.style.width = `${fieldW}px`;
-    slot.style.height = `${fieldH}px`;
-    slot.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
-    landingLayer.appendChild(slot);
   });
 }
 
@@ -263,15 +247,15 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
     const start = performance.now();
     const laps = 8;
     const baseTarget = angleForIndex(targetIndex);
-    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
+    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berÃ¼cksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
     const size = document.getElementById('roulette').clientWidth;
-    const startRadius = size * 0.44; // startet im grauen Außenbereich
+    const startRadius = size * 0.44; // startet im grauen AuÃŸenbereich
     const endRadius = size * 0.25;   // landet auf inneren Feldern
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
-      // Physikalisch wirkende gleichmäßige Verzögerung: v(t) fällt linear bis 0
+      // Physikalisch wirkende gleichmÃ¤ÃŸige VerzÃ¶gerung: v(t) fÃ¤llt linear bis 0
       const ease = (2 * t) - (t * t);
 
       const angle = -90 + (laps * 360 + (targetAngle + 90)) * ease;
@@ -292,13 +276,13 @@ function appendReveal(place, item) {
   if (revealList.querySelector('.text-muted')) revealList.innerHTML = '';
   const el = document.createElement('div');
   el.className = 'mb-2 p-2 rounded border border-warning-subtle bg-black';
-  el.innerHTML = `<strong>Platz ${place}:</strong> ${item.uploader || 'Anonymous'} · Chips ${item.vote_points || 0} · Stimmen ${item.vote_count || 0}`;
+  el.innerHTML = `<strong>Platz ${place}:</strong> ${item.uploader || 'Anonymous'} Â· Chips ${item.vote_points || 0} Â· Stimmen ${item.vote_count || 0}`;
   revealList.appendChild(el);
 }
 
 applyWheelColors();
 buildThumbs();
-nextPlace.textContent = step > 0 ? String(step) : '–';
+nextPlace.textContent = step > 0 ? String(step) : 'â€“';
 setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.44);
 window.addEventListener('resize', () => {
   buildThumbs();
@@ -324,11 +308,11 @@ btn.addEventListener('click', async () => {
 
   appendReveal(step, item);
 
-  document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
+  document.getElementById('winnerTitle').textContent = `ðŸŽ‰ Platz ${step}`;
   document.getElementById('winnerBody').innerHTML = `
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
     <div class="mt-2"><strong>${item.uploader || 'Anonymous'}</strong></div>
-    <div class="small text-warning">Chips: ${item.vote_points || 0} · Stimmen: ${item.vote_count || 0}</div>
+    <div class="small text-warning">Chips: ${item.vote_points || 0} Â· Stimmen: ${item.vote_count || 0}</div>
     <div class="small">${item.description || ''}</div>`;
   winnerModal.show();
 
@@ -343,7 +327,7 @@ btn.addEventListener('click', async () => {
     top10Section.classList.remove('d-none');
   } else {
     btn.disabled = false;
-    // Kugel bleibt auf dem getroffenen Feld liegen bis zum nächsten Spin
+    // Kugel bleibt auf dem getroffenen Feld liegen bis zum nÃ¤chsten Spin
   }
 });
 
@@ -363,3 +347,6 @@ fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
 </script>
 </body>
 </html>
+
+
+
