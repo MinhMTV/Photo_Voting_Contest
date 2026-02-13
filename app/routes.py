@@ -208,14 +208,14 @@ def duel_year(year: int):
 
     db = get_db()
     candidates = db.execute(
-        'SELECT * FROM images WHERE visible = 1 AND contest_year = ? ORDER BY RANDOM() LIMIT 2',
+        'SELECT * FROM images WHERE visible = 1 AND contest_year = ? ORDER BY RANDOM() LIMIT 3',
         (year,)
     ).fetchall()
 
-    if len(candidates) < 2:
+    if len(candidates) < 3:
         return redirect(url_for('main.contest_year', year=year))
 
-    return render_template('duel.html', year=year, a=candidates[0], b=candidates[1])
+    return render_template('duel.html', year=year, candidates=candidates)
 
 
 @bp.route('/vote/<int:image_id>', methods=['POST'])
