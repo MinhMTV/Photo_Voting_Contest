@@ -36,7 +36,7 @@
       position: absolute; inset: 58px; border-radius: 50%;
       border: 4px solid #d1aa52;
       box-shadow: 0 0 20px rgba(0,0,0,.45), inset 0 0 0 2px #2b1d0b;
-      transition: transform 3.8s cubic-bezier(.12,.71,.14,1);
+      transition: transform 11s cubic-bezier(.12,.71,.14,1);
       overflow: hidden;
       background: #111;
     }
@@ -245,7 +245,7 @@ function normalizeDeg(d) {
 function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
   return new Promise(resolve => {
     const start = performance.now();
-    const laps = 8;
+    const laps = 9;
     const baseTarget = angleForIndex(targetIndex);
     // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berÃ¼cksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
@@ -301,10 +301,10 @@ btn.addEventListener('click', async () => {
 
   const item = top5[idx];
   const targetIndex = findParticipantIndexByImageId(item.id);
-  wheelAngle += 1800 + Math.floor(Math.random() * 240);
+  wheelAngle -= 2100 + Math.floor(Math.random() * 280);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToIndex(targetIndex, wheelAngle, 9800);
+  await animateBallToIndex(targetIndex, wheelAngle, 11200);
 
   appendReveal(step, item);
 
