@@ -195,7 +195,8 @@ function applyWheelColors() {
 function angleForNumber(n) {
   const idx = rouletteOrder.indexOf(Number(n));
   const seg = 360 / rouletteOrder.length;
-  return (idx * seg) - 90;
+  // Mittelpunkt des Segments (nicht Segmentkante)
+  return (idx * seg) + (seg / 2) - 90;
 }
 
 function buildNumbers() {
@@ -294,7 +295,7 @@ btn.addEventListener('click', async () => {
     top10Section.classList.remove('d-none');
   } else {
     btn.disabled = false;
-    setBallPolar(-90, 145);
+    // Kugel bleibt auf dem getroffenen Feld liegen bis zum nächsten Spin
   }
 });
 
