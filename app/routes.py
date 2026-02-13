@@ -668,6 +668,7 @@ def public_results_year(year: int):
             images.uploader,
             images.description,
             COUNT(votes.id) as vote_count,
+            COALESCE(SUM(votes.chip_value), 0) as vote_points,
             SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) as hype_count,
             SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
             SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
