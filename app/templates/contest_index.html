@@ -50,7 +50,7 @@
 
 <div class="container py-3">
     <div class="text-center mb-3 d-flex flex-column gap-2 align-items-center">
-        <span class="chip" id="votesChip">Du hast noch <strong>{{ votes_left }}</strong> / 5 Chips</span>
+        <span class="chip" id="votesChip">Du hast noch <strong>{{ votes_left }}</strong> / 4 Chips</span>
         <div class="chip" id="chipPicker">Chips:
           <button type="button" class="reaction-btn chip-select active" data-chip="100"><img src="{{ url_for('static', filename='chips/chip_100.png') }}" alt="100"></button>
           <button type="button" class="reaction-btn chip-select" data-chip="50"><img src="{{ url_for('static', filename='chips/chip_50.png') }}" alt="50"></button>
@@ -89,7 +89,7 @@
 <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const maxVotes = 5;
+    const maxVotes = 4;
     const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
     localStorage.setItem('voter_session_id', voterSessionId);
     document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chipEl.classList.remove('show');
             renderPlacedChip(chipEl, '');
         });
-        votesChip.innerHTML = `Du hast noch <strong>5</strong> / 5 Chips`;
+        votesChip.innerHTML = `Du hast noch <strong>4</strong> / 4 Chips`;
         selectChip('100');
     });
 
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             refreshChipButtons();
             const left = Math.max(0, state.votes_left ?? (maxVotes - (state.vote_count || 0)));
-            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 5 Chips`;
+            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 4 Chips`;
         } catch (_) {}
     }
 
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data.success) return alert(data.error || 'Fehler');
 
             await syncVoteState();
-            if (selectedChip !== 'all-in') selectNextAvailableChip();
+            if (!data.removed_only && selectedChip !== 'all-in') selectNextAvailableChip();
         });
     });
 

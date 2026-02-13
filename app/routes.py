@@ -161,7 +161,9 @@ def contest_year(year: int):
     ).fetchall()
     voted_ids = [row['image_id'] for row in voted]
     user_bets = {str(row['image_id']): {'chip_value': row['chip_value'] or 1, 'chip_label': row['chip_label'] or 'vote'} for row in voted}
-    votes_left = max(0, 5 - len(voted_ids))
+    used_labels = {(row['chip_label'] or '').lower() for row in voted}
+    used_count = 4 if ('all-in' in used_labels or 'allin' in used_labels) else len(used_labels)
+    votes_left = max(0, 4 - used_count)
 
     user_reactions = {}
     if voter_session_id:
@@ -280,21 +282,14 @@ def vote(image_id):
         if int(vote_exists['chip_value'] or 0) == chip_value:
             db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
         else:
-            # user wants to change chip on this image
-            if chip_in_use and chip_in_use['id'] != vote_exists['id']:
-                # move selected chip from another image onto this image (swap/replace behavior)
-                db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
-                db.execute(
-                    'UPDATE votes SET image_id = ? WHERE id = ?',
-                    (image_id, chip_in_use['id'])
-                )
-                db.commit()
-                updated_vote_count = db.execute(
-                    'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
-                    (voter_session_id, contest_year)
-                ).fetchone()[0]
-                return jsonify(success=True, vote_count=updated_vote_count)
-            if chip_label in ('all-in', 'allin'):
+            # Two-step replace behavior on same image: first click removes old chip only.
+            db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
+            db.commit()
+            updated_vote_count = db.execute(
+                'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+                (voter_session_id, contest_year)
+            ).fetchone()[0]
+            return jsonify(success=True, vote_count=updated_vote_count, removed_only=True)
                 other_votes = db.execute(
                     'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ? AND id != ?',
                     (voter_session_id, contest_year, vote_exists['id'])
@@ -326,8 +321,8 @@ def vote(image_id):
             (voter_session_id, contest_year)
         ).fetchone()[0]
 
-        if vote_count >= 5:
-            return jsonify(success=False, error='Du hast das Stimmenlimit (5) erreicht'), 403
+        if vote_count >= 4:
+            return jsonify(success=False, error='Du hast das Chip-Limit (4) erreicht'), 403
 
         db.execute(
             'INSERT INTO votes (image_id, voter_session_id, contest_year, chip_value, chip_label) VALUES (?, ?, ?, ?, ?)',
@@ -348,7 +343,7 @@ def vote(image_id):
 def voter_state(year: int):
     voter_session_id = request.args.get('voter_session_id', '').strip()
     if not voter_session_id:
-        return jsonify(voted_ids=[], vote_count=0, votes_left=5)
+        return jsonify(voted_ids=[], vote_count=0, votes_left=4, bets=[])
 
     db = get_db()
     voted = db.execute(
@@ -358,7 +353,9 @@ def voter_state(year: int):
     voted_ids = [row['image_id'] for row in voted]
     vote_count = len(voted_ids)
     bets = [{'image_id': row['image_id'], 'chip_label': (row['chip_label'] or '').lower()} for row in voted]
-    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 5 - vote_count), bets=bets)
+    labels = {b['chip_label'] for b in bets}
+    used_count = 4 if ('all-in' in labels or 'allin' in labels) else len(labels)
+    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 4 - used_count), bets=bets)
 
 
 @bp.route('/api/reset-votes/<int:year>', methods=['POST'])
