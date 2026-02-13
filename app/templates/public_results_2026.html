@@ -7,10 +7,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background: radial-gradient(circle at 30% 10%, #2a1b45, #0c0a12 60%); color: #f8e8bb; }
-    .shell { max-width: 1050px; margin: 0 auto; padding: 20px; }
+    .shell { max-width: 96vw; margin: 0 auto; padding: 20px; }
     .roulette-wrap { background: #151022; border: 1px solid #8f6a2d; border-radius: 16px; padding: 20px; box-shadow: 0 0 40px rgba(255,214,123,.12); }
 
-    .roulette { width: 360px; height: 360px; margin: 0 auto; position: relative; }
+    .roulette { width: min(78vw, 680px); aspect-ratio: 1 / 1; margin: 0 auto; position: relative; }
     .outer-ring {
       position: absolute; inset: 0; border-radius: 50%;
       background: radial-gradient(circle, #7b5520 58%, #5f3f14 100%);
@@ -75,10 +75,10 @@
       border: 2px solid #966f2a;
     }
 
-    .numbers-layer { position: absolute; inset: 0; }
+    .numbers-layer { position: absolute; inset: 0; z-index: 7; }
     .num {
       position: absolute;
-      color: #ffe6b0; font-size: 10px; font-weight: 700;
+      color: #ffe6b0; font-size: clamp(10px, 1.1vw, 14px); font-weight: 700;
       text-shadow: 0 1px 2px rgba(0,0,0,.8);
       pointer-events: none;
       transform: translate(-50%, -50%);
@@ -89,7 +89,7 @@
       background: #fff; position: absolute; left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       box-shadow: 0 0 10px rgba(255,255,255,.95);
-      z-index: 5;
+      z-index: 4;
     }
     .pointer {
       width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
@@ -111,7 +111,7 @@
 
   <div class="roulette-wrap">
     <div class="row g-4 align-items-center">
-      <div class="col-12 col-md-6 text-center">
+      <div class="col-12 col-lg-7 text-center">
         <div class="pointer"></div>
         <div class="roulette" id="roulette">
           <div class="outer-ring"></div>
@@ -124,7 +124,7 @@
         </div>
         <button id="spinBtn" class="btn btn-warning mt-3">Kugel setzen</button>
       </div>
-      <div class="col-12 col-md-6">
+      <div class="col-12 col-lg-5">
         <div class="slot" id="revealList">
           <div class="text-muted">Noch keine Platzierungen aufgedeckt.</div>
         </div>
@@ -200,18 +200,22 @@ function angleForNumber(n) {
 }
 
 function buildNumbers() {
-  const radius = 118;
+  const size = document.getElementById('roulette').clientWidth;
+  const c = size / 2;
+  const radius = size * 0.33;
+  numbersLayer.innerHTML = '';
+
   rouletteOrder.forEach((n) => {
     const angle = angleForNumber(n);
     const rad = angle * Math.PI / 180;
-    const x = 50 + (Math.cos(rad) * radius * 100 / 244);
-    const y = 50 + (Math.sin(rad) * radius * 100 / 244);
+    const x = c + (Math.cos(rad) * radius);
+    const y = c + (Math.sin(rad) * radius);
 
     const el = document.createElement('div');
     el.className = 'num';
     el.textContent = String(n);
-    el.style.left = `${x}%`;
-    el.style.top = `${y}%`;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
     numbersLayer.appendChild(el);
   });
 }
@@ -235,8 +239,9 @@ function animateBallToNumber(targetNumber, wheelAngleDeg, durationMs) {
     const baseTarget = angleForNumber(targetNumber);
     // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
-    const startRadius = 145;
-    const endRadius = 112;
+    const size = document.getElementById('roulette').clientWidth;
+    const startRadius = size * 0.40;
+    const endRadius = size * 0.31;
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
@@ -265,7 +270,10 @@ function appendReveal(place, item) {
 
 applyWheelColors();
 buildNumbers();
-setBallPolar(-90, 145);
+setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.40);
+window.addEventListener('resize', () => {
+  buildNumbers();
+});
 
 btn.addEventListener('click', async () => {
   if (spinning || step < 1) return;
