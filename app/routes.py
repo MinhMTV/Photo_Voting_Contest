@@ -265,19 +265,28 @@ def vote(image_id):
         (image_id, voter_session_id, contest_year)
     ).fetchone()
 
+    # each chip can be used only once per user/year
+    chip_in_use = db.execute(
+        'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND chip_label = ?',
+        (voter_session_id, contest_year, chip_label)
+    ).fetchone()
+
     if vote_exists:
-        # Same chip => remove vote; different chip => update chip
+        # Same chip on same image => remove vote
         if int(vote_exists['chip_value'] or 0) == chip_value:
-            db.execute(
-                'DELETE FROM votes WHERE id = ?',
-                (vote_exists['id'],)
-            )
+            db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
         else:
+            # user wants to change chip on this image
+            if chip_in_use and chip_in_use['id'] != vote_exists['id']:
+                return jsonify(success=False, error=f'Chip {chip_label.upper()} wurde bereits auf ein anderes Bild gesetzt'), 403
             db.execute(
                 'UPDATE votes SET chip_value = ?, chip_label = ? WHERE id = ?',
                 (chip_value, chip_label, vote_exists['id'])
             )
     else:
+        if chip_in_use:
+            return jsonify(success=False, error=f'Chip {chip_label.upper()} wurde bereits benutzt'), 403
+
         vote_count = db.execute(
             'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
             (voter_session_id, contest_year)
