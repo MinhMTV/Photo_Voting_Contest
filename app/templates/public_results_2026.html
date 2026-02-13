@@ -77,11 +77,11 @@
 
     .numbers-layer { position: absolute; inset: 0; }
     .num {
-      position: absolute; left: 50%; top: 50%;
-      transform-origin: 0 0;
+      position: absolute;
       color: #ffe6b0; font-size: 10px; font-weight: 700;
       text-shadow: 0 1px 2px rgba(0,0,0,.8);
       pointer-events: none;
+      transform: translate(-50%, -50%);
     }
 
     .ball {
@@ -203,10 +203,15 @@ function buildNumbers() {
   const radius = 118;
   rouletteOrder.forEach((n) => {
     const angle = angleForNumber(n);
+    const rad = angle * Math.PI / 180;
+    const x = 50 + (Math.cos(rad) * radius * 100 / 244);
+    const y = 50 + (Math.sin(rad) * radius * 100 / 244);
+
     const el = document.createElement('div');
     el.className = 'num';
     el.textContent = String(n);
-    el.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(90deg)`;
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
     numbersLayer.appendChild(el);
   });
 }
