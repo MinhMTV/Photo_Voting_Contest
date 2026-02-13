@@ -52,11 +52,12 @@
     <div class="text-center mb-3 d-flex flex-column gap-2 align-items-center">
         <span class="chip" id="votesChip">Du hast noch <strong>{{ votes_left }}</strong> / 5 Chips</span>
         <div class="chip" id="chipPicker">Chips:
-          <button type="button" class="reaction-btn chip-select active" data-chip="5"><img src="{{ url_for('static', filename='chips/chip_5.png') }}" alt="5"></button>
-          <button type="button" class="reaction-btn chip-select" data-chip="25"><img src="{{ url_for('static', filename='chips/chip_25.png') }}" alt="25"></button>
+          <button type="button" class="reaction-btn chip-select active" data-chip="100"><img src="{{ url_for('static', filename='chips/chip_100.png') }}" alt="100"></button>
           <button type="button" class="reaction-btn chip-select" data-chip="50"><img src="{{ url_for('static', filename='chips/chip_50.png') }}" alt="50"></button>
-          <button type="button" class="reaction-btn chip-select" data-chip="100"><img src="{{ url_for('static', filename='chips/chip_100.png') }}" alt="100"></button>
+          <button type="button" class="reaction-btn chip-select" data-chip="25"><img src="{{ url_for('static', filename='chips/chip_25.png') }}" alt="25"></button>
+          <button type="button" class="reaction-btn chip-select" data-chip="5"><img src="{{ url_for('static', filename='chips/chip_5.png') }}" alt="5"></button>
           <button type="button" class="reaction-btn chip-select allin" data-chip="all-in">ALL-IN</button>
+          <button type="button" class="reaction-btn" id="resetVotesBtn">Reset</button>
         </div>
         <span class="chip countdown" id="countdown" data-end="{{ voting_end_at }}">Countdown lÃ¤dt...</span>
     </div>
@@ -97,7 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const reactionButtons = document.querySelectorAll('.reaction-btn:not(.chip-select)');
     const votesChip = document.getElementById('votesChip');
     const chipButtons = document.querySelectorAll('.chip-select');
-    let selectedChip = '5';
+    const resetVotesBtn = document.getElementById('resetVotesBtn');
+    let selectedChip = '100';
     const chipImageMap = {
         '5': "{{ url_for('static', filename='chips/chip_5.png') }}",
         '25': "{{ url_for('static', filename='chips/chip_25.png') }}",
@@ -129,6 +131,22 @@ document.addEventListener('DOMContentLoaded', () => {
         chipEl.appendChild(img);
     }
 
+    function selectChip(chip) {
+        const btn = Array.from(chipButtons).find(b => b.dataset.chip === chip);
+        if (!btn) return;
+        if (usedChips.has(chip) && chip !== selectedChip) return;
+        chipButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedChip = chip;
+        refreshChipButtons();
+    }
+
+    function selectNextAvailableChip() {
+        const order = ['100', '50', '25', '5'];
+        const next = order.find(c => !usedChips.has(c));
+        if (next) selectChip(next);
+    }
+
     function refreshChipButtons() {
         chipButtons.forEach(btn => {
             const chip = btn.dataset.chip;
@@ -138,13 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     chipButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (usedChips.has(btn.dataset.chip) && btn.dataset.chip !== selectedChip) return;
-            chipButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedChip = btn.dataset.chip;
-            refreshChipButtons();
-        });
+        btn.addEventListener('click', () => selectChip(btn.dataset.chip));
     });
 
     document.querySelectorAll('.placed-chip').forEach(el => {
@@ -152,6 +164,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chip) renderPlacedChip(el, chip);
     });
     refreshChipButtons();
+
+    resetVotesBtn.addEventListener('click', async () => {
+        if (!confirm('Alle gesetzten Chips zurücksetzen?')) return;
+        const res = await fetch(`/api/reset-votes/{{ year }}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({voter_session_id: voterSessionId})
+        });
+        const data = await res.json();
+        if (!data.success) return alert(data.error || 'Reset fehlgeschlagen');
+
+        usedChips.clear();
+        imageCards.forEach(card => {
+            card.classList.remove('voted');
+            const chipEl = card.querySelector('.placed-chip');
+            chipEl.classList.remove('show');
+            renderPlacedChip(chipEl, '');
+        });
+        votesChip.innerHTML = `Du hast noch <strong>5</strong> / 5 Chips`;
+        selectChip('100');
+    });
 
     fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
         const layer = document.getElementById('casino-stickers');
@@ -250,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             refreshChipButtons();
+            if (selectedChip !== 'all-in') selectNextAvailableChip();
             const left = Math.max(0, maxVotes - data.vote_count);
             votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 5 Chips`;
         });

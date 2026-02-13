@@ -282,7 +282,18 @@ def vote(image_id):
         else:
             # user wants to change chip on this image
             if chip_in_use and chip_in_use['id'] != vote_exists['id']:
-                return jsonify(success=False, error=f'Chip {chip_label.upper()} wurde bereits auf ein anderes Bild gesetzt'), 403
+                # move selected chip from another image onto this image (swap/replace behavior)
+                db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
+                db.execute(
+                    'UPDATE votes SET image_id = ? WHERE id = ?',
+                    (image_id, chip_in_use['id'])
+                )
+                db.commit()
+                updated_vote_count = db.execute(
+                    'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+                    (voter_session_id, contest_year)
+                ).fetchone()[0]
+                return jsonify(success=True, vote_count=updated_vote_count)
             if chip_label in ('all-in', 'allin'):
                 other_votes = db.execute(
                     'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ? AND id != ?',
@@ -347,6 +358,19 @@ def voter_state(year: int):
     voted_ids = [row['image_id'] for row in voted]
     vote_count = len(voted_ids)
     return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 5 - vote_count))
+
+
+@bp.route('/api/reset-votes/<int:year>', methods=['POST'])
+def reset_votes(year: int):
+    payload = request.json or {}
+    voter_session_id = (payload.get('voter_session_id') or '').strip()
+    if not voter_session_id:
+        return jsonify(success=False, error='Session fehlt'), 400
+
+    db = get_db()
+    db.execute('DELETE FROM votes WHERE voter_session_id = ? AND contest_year = ?', (voter_session_id, year))
+    db.commit()
+    return jsonify(success=True)
 
 
 @bp.route('/react/<int:image_id>', methods=['POST'])
