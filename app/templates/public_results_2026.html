@@ -194,19 +194,20 @@ const winnerModal = new bootstrap.Modal(document.getElementById('winnerModal'));
 
 const participants = (rankingImages || []).filter(x => x && x.filename);
 
-function shuffledNumbers() {
-  const arr = Array.from({ length: 36 }, (_, i) => i + 1);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+function shuffledNumbers0to36() {
+  const arr = Array.from({ length: 37 }, (_, i) => i); // 0..36
+  for (let i = arr.length - 1; i > 1; i--) {
+    const j = 1 + Math.floor(Math.random() * i);
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+  // 0 bleibt fix auf Position 0
   return arr;
 }
 
-const numPool = shuffledNumbers();
+const numPool = shuffledNumbers0to36();
 const participantNumberById = new Map();
 participants.forEach((p, i) => {
-  participantNumberById.set(Number(p.id), numPool[i % 36]);
+  participantNumberById.set(Number(p.id), numPool[i % 37]);
 });
 if (!participants.length || step === 0) {
   btn.disabled = true;
@@ -214,7 +215,9 @@ if (!participants.length || step === 0) {
 }
 
 function colorForIndex(i) {
-  if (i === 0) return '#1f8d3f'; // ein grünes Feld
+  const p = participants[i];
+  const n = p ? participantNumberById.get(Number(p.id)) : null;
+  if (n === 0) return '#1f8d3f'; // 0 immer grün
   return i % 2 === 0 ? '#111' : '#ba2323';
 }
 
