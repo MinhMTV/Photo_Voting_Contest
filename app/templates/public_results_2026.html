@@ -36,7 +36,7 @@
       position: absolute; inset: 58px; border-radius: 50%;
       border: 4px solid #d1aa52;
       box-shadow: 0 0 20px rgba(0,0,0,.45), inset 0 0 0 2px #2b1d0b;
-      transition: transform 11s cubic-bezier(.12,.71,.14,1);
+      transition: transform 13.2s cubic-bezier(.12,.71,.14,1);
       overflow: hidden;
       background: #111;
     }
@@ -257,13 +257,7 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
       const t = Math.min(1, (now - start) / durationMs);
       // Physikalisch wirkende gleichmÃ¤ÃŸige VerzÃ¶gerung: v(t) fÃ¤llt linear bis 0
       const angleEase = 1 - Math.pow(1 - t, 6.5);
-      let radialEase;
-      if (t < 0.62) {
-        radialEase = (t / 0.62) * 0.12;
-      } else {
-        const u = (t - 0.62) / 0.38;
-        radialEase = 0.12 + (1 - Math.pow(1 - u, 4.2)) * 0.88;
-      }
+      const radialEase = 1 - Math.pow(1 - t, 3.2);
 
       const angle = -90 + (laps * 360 + (targetAngle + 90)) * angleEase;
       const radius = startRadius + (endRadius - startRadius) * radialEase;
@@ -311,7 +305,7 @@ btn.addEventListener('click', async () => {
   wheelAngle -= 2100 + Math.floor(Math.random() * 280);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToIndex(targetIndex, wheelAngle, 11200);
+  await animateBallToIndex(targetIndex, wheelAngle, 13200);
 
   appendReveal(step, item);
 
