@@ -29,9 +29,7 @@
     <div class="container-fluid px-3">
         <span class="brand">CASINO Photo Voting Contest {{ year }}</span>
         <div class="d-flex gap-2">
-            {% for y in legacy_years %}
-            <a href="{{ url_for('main.public_results_year', year=y) }}" class="btn btn-outline-warning btn-sm">Ergebnisse {{ y }}</a>
-            {% endfor %}
+            <a href="{{ url_for('main.archive') }}" class="btn btn-outline-warning btn-sm">🗂️ Archiv</a>
             <a href="{{ url_for('main.duel_year', year=year) }}" class="btn btn-outline-danger btn-sm">⚔️ Duell</a>
             <a href="{{ url_for('main.public_results_year', year=year) }}" class="btn btn-gold btn-sm">{{ year }} Ergebnisse</a>
             <a href="{{ url_for('main.login') }}" class="btn btn-outline-light btn-sm">Admin</a>

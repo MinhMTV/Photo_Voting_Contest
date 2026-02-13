@@ -64,6 +64,14 @@ def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
     return waiting_map.get(str(year), 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.')
 
 
+def waiting_template_for_year(year: int) -> str:
+    templates_dir = os.path.join(current_app.root_path, 'templates')
+    year_name = f'public_waiting_{year}.html'
+    if os.path.exists(os.path.join(templates_dir, year_name)):
+        return year_name
+    return 'public_waiting.html'
+
+
 def upload_folder_for_year(year: int) -> str:
     base_static = current_app.static_folder
     path = os.path.join(base_static, f'uploads_{year}')
@@ -170,6 +178,20 @@ def contest_year(year: int):
         voting_end_at=settings.get('voting_end_at'),
         user_reactions=user_reactions
     )
+
+
+@bp.route('/archive')
+def archive():
+    settings = get_runtime_settings()
+    years = [int(y) for y in settings.get('legacy_years', [])]
+    return render_template('archive.html', years=sorted(set(years), reverse=True))
+
+
+@bp.route('/public-waiting/<int:year>')
+def public_waiting_preview(year: int):
+    settings = get_runtime_settings()
+    template = waiting_template_for_year(year)
+    return render_template(template, year=year, waiting_text=waiting_text_for_year(year, settings))
 
 
 @bp.route('/duel/<int:year>')
@@ -542,7 +564,7 @@ def public_results_year(year: int):
     published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
     settings = get_runtime_settings()
     if year == current_year() and not published:
-        return render_template('public_waiting.html', year=year, waiting_text=waiting_text_for_year(year, settings))
+        return render_template(waiting_template_for_year(year), year=year, waiting_text=waiting_text_for_year(year, settings))
 
     db = get_db()
 

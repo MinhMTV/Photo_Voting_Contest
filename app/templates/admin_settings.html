@@ -54,7 +54,10 @@
     <div class="row g-3">
       {% for y in available_years %}
       <div class="col-12">
-        <label class="form-label">Waiting Text {{ y }}</label>
+        <div class="d-flex justify-content-between align-items-center">
+          <label class="form-label mb-1">Waiting Text {{ y }}</label>
+          <a class="btn btn-outline-info btn-sm" target="_blank" href="{{ url_for('main.public_waiting_preview', year=y) }}">Preview {{ y }}</a>
+        </div>
         <textarea class="form-control" name="waiting_text_{{ y }}" rows="2" placeholder="Text für Public Waiting {{ y }}">{{ waiting_texts[y|string] }}</textarea>
       </div>
       {% endfor %}
