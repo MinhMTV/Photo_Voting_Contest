@@ -26,10 +26,14 @@ def _settings_path() -> str:
 
 
 def get_runtime_settings() -> dict:
+    base_year = int(current_app.config.get('CURRENT_CONTEST_YEAR', 2026))
     defaults = {
-        'current_contest_year': int(current_app.config.get('CURRENT_CONTEST_YEAR', 2026)),
+        'current_contest_year': base_year,
         'legacy_years': current_app.config.get('LEGACY_CONTEST_YEARS', [2025]),
-        'voting_end_at': current_app.config.get('VOTING_END_AT', '2026-12-31T23:59:59')
+        'voting_end_at': current_app.config.get('VOTING_END_AT', '2026-12-31T23:59:59'),
+        'waiting_text_by_year': {
+            str(base_year): 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.'
+        }
     }
     path = _settings_path()
     if not os.path.exists(path):
@@ -52,6 +56,12 @@ def save_runtime_settings(data: dict) -> None:
 
 def current_year() -> int:
     return int(get_runtime_settings().get('current_contest_year', 2026))
+
+
+def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
+    cfg = settings or get_runtime_settings()
+    waiting_map = cfg.get('waiting_text_by_year', {}) or {}
+    return waiting_map.get(str(year), 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.')
 
 
 def upload_folder_for_year(year: int) -> str:
@@ -341,10 +351,18 @@ def admin_settings():
             # fallback to previous year
             legacy_years = [selected_year - 1]
 
+        all_years = sorted(set([selected_year, *legacy_years]), reverse=True)
+        waiting_map_existing = (settings.get('waiting_text_by_year') or {})
+        waiting_text_by_year = {}
+        for y in all_years:
+            raw = request.form.get(f'waiting_text_{y}', '').strip()
+            waiting_text_by_year[str(y)] = raw or waiting_map_existing.get(str(y), '') or waiting_text_for_year(y, settings)
+
         new_settings = {
             'current_contest_year': selected_year,
             'legacy_years': sorted(set(legacy_years), reverse=True),
-            'voting_end_at': voting_end_at
+            'voting_end_at': voting_end_at,
+            'waiting_text_by_year': waiting_text_by_year
         }
         save_runtime_settings(new_settings)
 
@@ -357,7 +375,9 @@ def admin_settings():
 
         return redirect(url_for('main.admin_settings'))
 
-    return render_template('admin_settings.html', settings=settings)
+    available_years = sorted(set([int(settings.get('current_contest_year', current_year())), *[int(y) for y in settings.get('legacy_years', [])]]), reverse=True)
+    waiting_texts = {str(y): waiting_text_for_year(int(y), settings) for y in available_years}
+    return render_template('admin_settings.html', settings=settings, available_years=available_years, waiting_texts=waiting_texts)
 
 
 @bp.route('/admin/stickers', methods=['GET', 'POST'])
@@ -520,8 +540,9 @@ def public_results_year(year: int):
     # Hide current year's public results until admin publishes them
     flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
     published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
+    settings = get_runtime_settings()
     if year == current_year() and not published:
-        return render_template('public_waiting.html')
+        return render_template('public_waiting.html', year=year, waiting_text=waiting_text_for_year(year, settings))
 
     db = get_db()
 

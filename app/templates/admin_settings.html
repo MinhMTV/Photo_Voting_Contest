@@ -49,6 +49,17 @@
       </div>
     </div>
 
+    <hr class="my-4" />
+    <h2 class="h5 mb-3">Public Waiting Text pro Jahr</h2>
+    <div class="row g-3">
+      {% for y in available_years %}
+      <div class="col-12">
+        <label class="form-label">Waiting Text {{ y }}</label>
+        <textarea class="form-control" name="waiting_text_{{ y }}" rows="2" placeholder="Text für Public Waiting {{ y }}">{{ waiting_texts[y|string] }}</textarea>
+      </div>
+      {% endfor %}
+    </div>
+
     <div class="mt-3 d-flex gap-2">
       <button class="btn btn-primary" type="submit">Speichern</button>
       <a class="btn btn-outline-secondary" href="{{ url_for('main.upload') }}">Zurück</a>
