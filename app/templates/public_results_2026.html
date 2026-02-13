@@ -256,10 +256,17 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
       // Physikalisch wirkende gleichmÃ¤ÃŸige VerzÃ¶gerung: v(t) fÃ¤llt linear bis 0
-      const ease = 1 - Math.pow(1 - t, 7);
+      const angleEase = 1 - Math.pow(1 - t, 6.5);
+      let radialEase;
+      if (t < 0.62) {
+        radialEase = (t / 0.62) * 0.12;
+      } else {
+        const u = (t - 0.62) / 0.38;
+        radialEase = 0.12 + (1 - Math.pow(1 - u, 4.2)) * 0.88;
+      }
 
-      const angle = -90 + (laps * 360 + (targetAngle + 90)) * ease;
-      const radius = startRadius + (endRadius - startRadius) * ease;
+      const angle = -90 + (laps * 360 + (targetAngle + 90)) * angleEase;
+      const radius = startRadius + (endRadius - startRadius) * radialEase;
       setBallPolar(angle, radius);
       if (t < 1) requestAnimationFrame(frame);
       else {
