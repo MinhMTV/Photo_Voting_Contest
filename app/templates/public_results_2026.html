@@ -71,11 +71,11 @@
     }
 
     .ball {
-      width: 20px; height: 20px; border-radius: 50%;
+      width: 26px; height: 26px; border-radius: 50%;
       background: radial-gradient(circle at 35% 35%, #fff, #e8e8e8 60%, #cfcfcf);
       position: absolute; left: 50%; top: 50%;
       transform: translate(-50%, -50%);
-      box-shadow: 0 0 12px rgba(255,255,255,.95);
+      box-shadow: 0 0 14px rgba(255,255,255,.95);
       z-index: 8;
     }
     .pointer {
@@ -206,8 +206,8 @@ function buildThumbs() {
   const c = wheelSize / 2;
   const thumbRadius = wheelSize * 0.47;  const count = segmentCount();
   const segArc = (2 * Math.PI * thumbRadius) / count;
-  const fieldW = Math.max(26, Math.min(56, segArc * 0.88));
-  const fieldH = Math.max(18, Math.min(40, fieldW * 0.72));
+  const fieldW = Math.max(30, Math.min(68, segArc * 0.98));
+  const fieldH = Math.max(18, Math.min(40, fieldW * 0.62));
 
   thumbsLayer.innerHTML = '';
   participants.forEach((p, i) => {
@@ -256,7 +256,7 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
       // Physikalisch wirkende gleichmÃ¤ÃŸige VerzÃ¶gerung: v(t) fÃ¤llt linear bis 0
-      const ease = (2 * t) - (t * t);
+      const ease = 1 - Math.pow(1 - t, 7);
 
       const angle = -90 + (laps * 360 + (targetAngle + 90)) * ease;
       const radius = startRadius + (endRadius - startRadius) * ease;
@@ -304,7 +304,7 @@ btn.addEventListener('click', async () => {
   wheelAngle += 1800 + Math.floor(Math.random() * 240);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToIndex(targetIndex, wheelAngle, 8400);
+  await animateBallToIndex(targetIndex, wheelAngle, 9800);
 
   appendReveal(step, item);
 
