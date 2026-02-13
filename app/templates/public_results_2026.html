@@ -48,8 +48,8 @@
     .thumbs-layer { position: absolute; inset: 0; z-index: 7; }
     .thumb {
       position: absolute;
-      width: clamp(18px, 3.4vw, 34px);
-      height: clamp(18px, 3.4vw, 34px);
+      width: clamp(28px, 4.8vw, 50px);
+      height: clamp(28px, 4.8vw, 50px);
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid #f1d28a;
@@ -58,13 +58,25 @@
       pointer-events: none;
       background:#000;
     }
+    .landing-slot {
+      position: absolute;
+      width: clamp(34px, 5.8vw, 58px);
+      height: clamp(34px, 5.8vw, 58px);
+      border-radius: 50%;
+      border: 2px dashed rgba(255,215,120,.95);
+      box-shadow: 0 0 0 2px rgba(30,20,8,.7) inset, 0 0 8px rgba(255,215,120,.45);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 6;
+    }
 
     .ball {
-      width: 14px; height: 14px; border-radius: 50%;
-      background: #fff; position: absolute; left: 50%; top: 50%;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff, #e8e8e8 60%, #cfcfcf);
+      position: absolute; left: 50%; top: 50%;
       transform: translate(-50%, -50%);
-      box-shadow: 0 0 10px rgba(255,255,255,.95);
-      z-index: 4;
+      box-shadow: 0 0 12px rgba(255,255,255,.95);
+      z-index: 8;
     }
     .pointer {
       width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
@@ -91,7 +103,7 @@
         <div class="roulette" id="roulette">
           <div class="outer-ring"></div>
           <div class="track-ring"></div>
-          <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="thumbs-layer" id="thumbsLayer"></div></div>
+          <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="thumbs-layer" id="thumbsLayer"></div><div class="thumbs-layer" id="landingLayer"></div></div>
           <div class="ball" id="ball"></div>
         </div>
         <div class="mt-3">
@@ -148,6 +160,7 @@ let wheelAngle = 0;
 const wheel = document.getElementById('wheel');
 const ball = document.getElementById('ball');
 const thumbsLayer = document.getElementById('thumbsLayer');
+const landingLayer = document.getElementById('landingLayer');
 const fieldRing = document.getElementById('fieldRing');
 const btn = document.getElementById('spinBtn');
 const nextPlace = document.getElementById('nextPlace');
@@ -192,22 +205,33 @@ function findParticipantIndexByImageId(imageId) {
 function buildThumbs() {
   const wheelSize = wheel.clientWidth;
   const c = wheelSize / 2;
-  const radius = wheelSize * 0.47;
+  const thumbRadius = wheelSize * 0.47;
+  const landingRadius = wheelSize * 0.25;
   thumbsLayer.innerHTML = '';
+  landingLayer.innerHTML = '';
 
   participants.forEach((p, i) => {
     const angle = angleForIndex(i);
     const rad = angle * Math.PI / 180;
-    const x = c + (Math.cos(rad) * radius);
-    const y = c + (Math.sin(rad) * radius);
+
+    const tx = c + (Math.cos(rad) * thumbRadius);
+    const ty = c + (Math.sin(rad) * thumbRadius);
 
     const img = document.createElement('img');
     img.className = 'thumb';
     img.src = `/media/{{ year }}/${p.filename}`;
     img.alt = p.uploader || 'Teilnehmer';
-    img.style.left = `${x}px`;
-    img.style.top = `${y}px`;
+    img.style.left = `${tx}px`;
+    img.style.top = `${ty}px`;
     thumbsLayer.appendChild(img);
+
+    const lx = c + (Math.cos(rad) * landingRadius);
+    const ly = c + (Math.sin(rad) * landingRadius);
+    const slot = document.createElement('div');
+    slot.className = 'landing-slot';
+    slot.style.left = `${lx}px`;
+    slot.style.top = `${ly}px`;
+    landingLayer.appendChild(slot);
   });
 }
 
@@ -226,17 +250,21 @@ function normalizeDeg(d) {
 function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
   return new Promise(resolve => {
     const start = performance.now();
-    const laps = 6;
+    const laps = 7;
     const baseTarget = angleForIndex(targetIndex);
     // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
     const size = document.getElementById('roulette').clientWidth;
-    const startRadius = size * 0.40;
-    const endRadius = size * 0.25;
+    const startRadius = size * 0.44; // startet im grauen Außenbereich
+    const endRadius = size * 0.25;   // landet auf inneren Feldern
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
-      const ease = 1 - Math.pow(1 - t, 3);
+      // Langsames Ausrollen am Ende (lange Slow-Phase)
+      const ease = t < 0.72
+        ? (1 - Math.pow(1 - (t / 0.72), 2.2)) * 0.85
+        : 0.85 + (1 - Math.pow(1 - ((t - 0.72) / 0.28), 4.5)) * 0.15;
+
       const angle = -90 + (laps * 360 + (targetAngle + 90)) * ease;
       const radius = startRadius + (endRadius - startRadius) * ease;
       setBallPolar(angle, radius);
@@ -262,7 +290,7 @@ function appendReveal(place, item) {
 applyWheelColors();
 buildThumbs();
 nextPlace.textContent = step > 0 ? String(step) : '–';
-setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.40);
+setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.44);
 window.addEventListener('resize', () => {
   buildThumbs();
 });
@@ -283,7 +311,7 @@ btn.addEventListener('click', async () => {
   wheelAngle += 1800 + Math.floor(Math.random() * 240);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToIndex(targetIndex, wheelAngle, 3800);
+  await animateBallToIndex(targetIndex, wheelAngle, 6200);
 
   appendReveal(step, item);
 
