@@ -812,6 +812,7 @@ def reset_year_votes_admin():
 
     db = get_db()
     db.execute('DELETE FROM votes WHERE contest_year = ?', (year,))
+    db.execute('DELETE FROM reactions WHERE contest_year = ?', (year,))
     db.execute('DELETE FROM duel_votes WHERE contest_year = ?', (year,))
     db.commit()
 
