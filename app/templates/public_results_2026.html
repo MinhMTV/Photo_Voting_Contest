@@ -104,7 +104,51 @@
     }
 
     .slot { min-height: 120px; background: #0f0b19; border: 1px dashed #8f6a2d; border-radius: 12px; padding: 12px; }
-    .reveal-card img { width: 100%; max-height: 280px; object-fit: cover; border-radius: 12px; }
+    .reveal-card { text-align:center; position:relative; overflow:hidden; }
+    .reveal-card img { width: min(92%, 420px); max-height: 300px; object-fit: cover; border-radius: 14px; border:2px solid #f3cf87; box-shadow:0 0 20px rgba(255,212,120,.35); }
+
+    #winnerModal .modal-content {
+      background: radial-gradient(circle at 50% 20%, #2d1235, #120817 70%);
+      border: 2px solid #ffcf70 !important;
+      box-shadow: 0 0 25px rgba(255, 76, 166, .55), 0 0 60px rgba(255, 207, 112, .25);
+      overflow: hidden;
+      text-align: center;
+    }
+    #winnerModal .modal-header { justify-content: center; border-bottom: 1px solid rgba(255,255,255,.12); }
+    #winnerModal .modal-title {
+      font-weight: 900;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: #ffd98e;
+      text-shadow: 0 0 8px rgba(255,217,142,.65), 0 0 20px rgba(255,70,155,.35);
+      animation: titleFlicker 900ms ease-in-out infinite;
+    }
+    #winnerModal .btn-close { position:absolute; right:14px; top:14px; }
+
+    .party-wrap {
+      position: absolute; inset: 0; pointer-events: none; z-index: 2;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(255,70,155,.24), transparent 28%),
+        radial-gradient(circle at 82% 24%, rgba(71,196,255,.22), transparent 30%),
+        radial-gradient(circle at 50% 78%, rgba(255,208,89,.2), transparent 34%);
+      animation: partyGlow 1.6s ease-in-out infinite;
+    }
+    .party-beam {
+      position:absolute; width:4px; height:120%; top:-10%; left:50%; transform-origin:50% 55%;
+      background: linear-gradient(to bottom, rgba(255,255,255,.0), rgba(255,92,171,.65), rgba(255,255,255,0));
+      filter: blur(0.5px);
+      animation: beamSpin 3.2s linear infinite;
+    }
+    .party-beam.b2 { animation-duration: 2.6s; background: linear-gradient(to bottom, rgba(255,255,255,.0), rgba(89,206,255,.6), rgba(255,255,255,0)); }
+    .party-beam.b3 { animation-duration: 3.8s; background: linear-gradient(to bottom, rgba(255,255,255,.0), rgba(255,220,120,.62), rgba(255,255,255,0)); }
+
+    .win-name { margin-top:10px; font-size: clamp(1.15rem,2.4vw,1.6rem); font-weight: 900; color:#fff0cf; text-shadow: 0 0 12px rgba(255,112,188,.42); }
+    .win-meta { font-size:1rem; color:#ffd98e; font-weight:700; margin-top:4px; }
+    .win-desc { margin-top:8px; font-size:.97rem; color:#f4e7ff; opacity:.95; }
+
+    @keyframes titleFlicker { 0%,100%{opacity:1} 50%{opacity:.82} }
+    @keyframes partyGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.28)} }
+    @keyframes beamSpin { from{transform:translateX(-50%) rotate(0deg)} to{transform:translateX(-50%) rotate(360deg)} }
     #winner-stickers { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
     #winner-stickers img { position: absolute; width: 68px; opacity: .85; animation: drift 6s ease-in-out infinite; }
     @keyframes drift { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-16px) } }
@@ -487,10 +531,15 @@ btn.addEventListener('click', async () => {
   const n = participantNumberById.get(Number(item.id)) || '-';
   document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
   document.getElementById('winnerBody').innerHTML = `
+    <div class="party-wrap">
+      <div class="party-beam"></div>
+      <div class="party-beam b2"></div>
+      <div class="party-beam b3"></div>
+    </div>
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
-    <div class="mt-2"><strong>#${n} ${item.uploader || 'Anonymous'}</strong></div>
-    <div class="small text-warning">Chips: ${item.vote_points || 0}</div>
-    <div class="small">${item.description || ''}</div>`;
+    <div class="win-name">#${n} ${item.uploader || 'Anonymous'}</div>
+    <div class="win-meta">🪙 Chips: ${item.vote_points || 0}</div>
+    <div class="win-desc">${item.description || ''}</div>`;
   casinoCelebrate();
   winnerModal.show();
 
