@@ -763,6 +763,7 @@ def public_results_year(year: int):
     top_images = ranking_rows[:5]
     top_10_images = ranking_rows[:10]
     top_images_json = [dict(r) for r in top_images]
+    ranking_images_json = [dict(r) for r in ranking_rows]
 
     templates_dir = os.path.join(current_app.root_path, 'templates')
     year_template_name = f'public_results_{year}.html'
@@ -791,6 +792,7 @@ def public_results_year(year: int):
         top_images=top_images,
         top_10_images=top_10_images,
         top_images_json=top_images_json,
+        ranking_images_json=ranking_images_json,
         year=year
     )
 

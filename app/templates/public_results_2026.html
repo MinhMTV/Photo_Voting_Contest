@@ -45,13 +45,18 @@
       z-index: 2;
     }
 
-    .numbers-layer { position: absolute; inset: 0; z-index: 7; }
-    .num {
+    .thumbs-layer { position: absolute; inset: 0; z-index: 7; }
+    .thumb {
       position: absolute;
-      color: #ffe6b0; font-size: clamp(10px, 1.1vw, 14px); font-weight: 700;
-      text-shadow: 0 1px 2px rgba(0,0,0,.8);
-      pointer-events: none;
+      width: clamp(18px, 3.4vw, 34px);
+      height: clamp(18px, 3.4vw, 34px);
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #f1d28a;
+      box-shadow: 0 1px 3px rgba(0,0,0,.6);
       transform: translate(-50%, -50%);
+      pointer-events: none;
+      background:#000;
     }
 
     .ball {
@@ -86,7 +91,7 @@
         <div class="roulette" id="roulette">
           <div class="outer-ring"></div>
           <div class="track-ring"></div>
-          <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="numbers-layer" id="numbersLayer"></div></div>
+          <div class="wheel" id="wheel"><div class="field-ring" id="fieldRing"></div><div class="thumbs-layer" id="thumbsLayer"></div></div>
           <div class="ball" id="ball"></div>
         </div>
         <div class="mt-3">
@@ -135,13 +140,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const top5 = {{ top_images_json|tojson }};
-let step = 5;
-let idx = 4;
+const rankingImages = {{ ranking_images_json|tojson }};
+let step = Math.min(5, top5.length || 0);
+let idx = step - 1;
 let spinning = false;
 let wheelAngle = 0;
 const wheel = document.getElementById('wheel');
 const ball = document.getElementById('ball');
-const numbersLayer = document.getElementById('numbersLayer');
+const thumbsLayer = document.getElementById('thumbsLayer');
 const fieldRing = document.getElementById('fieldRing');
 const btn = document.getElementById('spinBtn');
 const nextPlace = document.getElementById('nextPlace');
@@ -149,49 +155,59 @@ const revealList = document.getElementById('revealList');
 const top10Section = document.getElementById('top10Section');
 const winnerModal = new bootstrap.Modal(document.getElementById('winnerModal'));
 
-const rouletteOrder = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const redNumbers = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const participants = (rankingImages || []).filter(x => x && x.filename);
+if (!participants.length || step === 0) {
+  btn.disabled = true;
+  btn.textContent = 'Keine Teilnehmer';
+}
 
-function colorForNumber(n) {
-  if (n === 0) return '#1f8d3f';
-  return redNumbers.has(n) ? '#ba2323' : '#111';
+function colorForIndex(i) {
+  if (i === 0) return '#1f8d3f'; // ein grünes Feld
+  return i % 2 === 0 ? '#111' : '#ba2323';
+}
+
+function segmentCount() {
+  return Math.max(1, participants.length);
 }
 
 function applyWheelColors() {
-  const seg = 360 / rouletteOrder.length;
-  const parts = rouletteOrder.map((n, i) => `${colorForNumber(n)} ${(i * seg).toFixed(3)}deg ${((i + 1) * seg).toFixed(3)}deg`);
-  // äußerer Zahlenring
+  const count = segmentCount();
+  const seg = 360 / count;
+  const parts = Array.from({length: count}, (_, i) => `${colorForIndex(i)} ${(i * seg).toFixed(3)}deg ${((i + 1) * seg).toFixed(3)}deg`);
   wheel.style.background = `conic-gradient(${parts.join(',')})`;
-  // innerer Treffer-Ring (wo die Kugel landen soll)
   fieldRing.style.background = `conic-gradient(${parts.join(',')})`;
 }
 
-function angleForNumber(n) {
-  const idx = rouletteOrder.indexOf(Number(n));
-  const seg = 360 / rouletteOrder.length;
-  // Mittelpunkt des Segments (nicht Segmentkante)
-  return (idx * seg) + (seg / 2) - 90;
+function angleForIndex(i) {
+  const count = segmentCount();
+  const seg = 360 / count;
+  return (i * seg) + (seg / 2) - 90;
 }
 
-function buildNumbers() {
+function findParticipantIndexByImageId(imageId) {
+  const idx = participants.findIndex(p => Number(p.id) === Number(imageId));
+  return idx >= 0 ? idx : 0;
+}
+
+function buildThumbs() {
   const wheelSize = wheel.clientWidth;
   const c = wheelSize / 2;
-  // Zahlen an den äußeren Rand des inneren Farbkreises
   const radius = wheelSize * 0.47;
-  numbersLayer.innerHTML = '';
+  thumbsLayer.innerHTML = '';
 
-  rouletteOrder.forEach((n) => {
-    const angle = angleForNumber(n);
+  participants.forEach((p, i) => {
+    const angle = angleForIndex(i);
     const rad = angle * Math.PI / 180;
     const x = c + (Math.cos(rad) * radius);
     const y = c + (Math.sin(rad) * radius);
 
-    const el = document.createElement('div');
-    el.className = 'num';
-    el.textContent = String(n);
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    numbersLayer.appendChild(el);
+    const img = document.createElement('img');
+    img.className = 'thumb';
+    img.src = `/media/{{ year }}/${p.filename}`;
+    img.alt = p.uploader || 'Teilnehmer';
+    img.style.left = `${x}px`;
+    img.style.top = `${y}px`;
+    thumbsLayer.appendChild(img);
   });
 }
 
@@ -207,11 +223,11 @@ function normalizeDeg(d) {
   return ((d % 360) + 360) % 360;
 }
 
-function animateBallToNumber(targetNumber, wheelAngleDeg, durationMs) {
+function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
   return new Promise(resolve => {
     const start = performance.now();
     const laps = 6;
-    const baseTarget = angleForNumber(targetNumber);
+    const baseTarget = angleForIndex(targetIndex);
     // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
     const size = document.getElementById('roulette').clientWidth;
@@ -244,10 +260,11 @@ function appendReveal(place, item) {
 }
 
 applyWheelColors();
-buildNumbers();
+buildThumbs();
+nextPlace.textContent = step > 0 ? String(step) : '–';
 setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.40);
 window.addEventListener('resize', () => {
-  buildNumbers();
+  buildThumbs();
 });
 
 btn.addEventListener('click', async () => {
@@ -261,16 +278,16 @@ btn.addEventListener('click', async () => {
   spinning = true;
   btn.disabled = true;
 
-  const targetNumber = step; // 5,4,3,2,1
+  const item = top5[idx];
+  const targetIndex = findParticipantIndexByImageId(item.id);
   wheelAngle += 1800 + Math.floor(Math.random() * 240);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToNumber(targetNumber, wheelAngle, 3800);
+  await animateBallToIndex(targetIndex, wheelAngle, 3800);
 
-  const item = top5[idx];
   appendReveal(step, item);
 
-  document.getElementById('winnerTitle').textContent = `🎉 Platz ${step} (Feld ${targetNumber})`;
+  document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
   document.getElementById('winnerBody').innerHTML = `
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
     <div class="mt-2"><strong>${item.uploader || 'Anonymous'}</strong></div>
