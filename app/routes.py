@@ -218,6 +218,25 @@ def duel_year(year: int):
     return render_template('duel.html', year=year, candidates=candidates)
 
 
+@bp.route('/api/duel-spin/<int:year>')
+def duel_spin(year: int):
+    db = get_db()
+    rows = db.execute(
+        'SELECT id, filename, uploader, description FROM images WHERE visible = 1 AND contest_year = ? ORDER BY RANDOM() LIMIT 3',
+        (year,)
+    ).fetchall()
+
+    if len(rows) < 3:
+        return jsonify(success=False, error='Nicht genug Bilder für Duel-Slot'), 400
+
+    return jsonify(success=True, candidates=[{
+        'id': r['id'],
+        'filename': r['filename'],
+        'uploader': r['uploader'] or 'Unbekannt',
+        'description': r['description'] or ''
+    } for r in rows])
+
+
 @bp.route('/vote/<int:image_id>', methods=['POST'])
 def vote(image_id):
     voter_session_id = request.json.get('voter_session_id')

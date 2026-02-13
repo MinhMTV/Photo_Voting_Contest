@@ -9,10 +9,10 @@
     body { background: radial-gradient(circle at top, #2a0c44, #09070f 65%); color:#ffe8b3; }
     .machine-wrap { max-width: 1050px; margin: 18px auto; position: relative; }
     .machine { border:3px solid #ff9f1c; border-radius:24px; padding:16px 18px 22px; background:linear-gradient(180deg,#38145c,#1a0f2d); box-shadow:0 0 30px rgba(255,174,66,.45); }
-    .machine-head { text-align:center; font-weight:800; letter-spacing:.5px; margin-bottom:10px; color:#ffdf84; }
+    .machine-head { text-align:center; font-weight:800; margin-bottom:10px; color:#ffdf84; }
     .lights { height:10px; border-radius:999px; background:linear-gradient(90deg,#ff3864,#ffe066,#4cd137,#00d2ff,#c56cf0); margin:10px 0 14px; }
     .reels { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
-    .reel { background:#10091d; border:2px solid #ffcf66; border-radius:14px; padding:10px; box-shadow: inset 0 0 20px rgba(255,175,65,.2); transition: transform .2s ease; }
+    .reel { background:#10091d; border:2px solid #ffcf66; border-radius:14px; padding:10px; box-shadow: inset 0 0 20px rgba(255,175,65,.2); }
     .reel img { width:100%; height:250px; object-fit:cover; border-radius:10px; }
     .name { color:#ffd87b; font-weight:700; margin-top:8px; }
     .desc { color:#d7c9a2; font-size:.9rem; min-height:42px; }
@@ -21,20 +21,8 @@
     .lever-box { position:absolute; right:-26px; top:120px; width:70px; text-align:center; }
     .lever { width:16px; height:120px; margin:0 auto; border-radius:10px; background:linear-gradient(180deg,#ffe08a,#f39c12); cursor:pointer; transform-origin: top center; transition: transform .25s ease; }
     .knob { width:40px; height:40px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 30% 30%,#fff3bf,#ff9f1c 70%); border:2px solid #ffd166; }
-    .lever-label { font-size:.75rem; color:#ffd166; margin-top:6px; }
-
-    .spinning .reel { animation: wobble .22s linear infinite; }
-    .spinning .reel img { animation: blurspin .25s linear infinite; }
     .spinning .lever { transform: rotate(28deg); }
-
-    @keyframes wobble { 0%{transform:translateY(0)} 50%{transform:translateY(-3px)} 100%{transform:translateY(0)} }
-    @keyframes blurspin { 0%{filter:blur(0)} 50%{filter:blur(2px)} 100%{filter:blur(0)} }
-
-    @media (max-width: 900px){
-      .lever-box { position:static; width:auto; margin:10px auto 0; }
-      .lever { height:70px; }
-      .reel img { height:180px; }
-    }
+    @media (max-width: 900px){ .lever-box { position:static; width:auto; margin:10px auto 0; } .lever { height:70px; } .reel img { height:180px; } }
   </style>
 </head>
 <body>
@@ -50,7 +38,7 @@
       <div class="lights"></div>
       <div class="reels" id="reels">
         {% for c in candidates %}
-        <div class="reel">
+        <div class="reel" data-reel-index="{{ loop.index0 }}">
           <img src="{{ url_for('main.media_year', year=year, filename=c.filename) }}" alt="{{ c.uploader }}">
           <div class="name">{{ c.uploader or 'Unbekannt' }}</div>
           <div class="desc">{{ c.description or '' }}</div>
@@ -67,7 +55,7 @@
     <div class="lever-box">
       <div class="knob"></div>
       <div class="lever" id="lever"></div>
-      <div class="lever-label">Einarmiger Bandit</div>
+      <div class="small text-warning mt-1">Einarmiger Bandit</div>
     </div>
   </div>
 </div>
@@ -81,35 +69,82 @@ document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=
 const machine = document.getElementById('machineWrap');
 const lever = document.getElementById('lever');
 const spinBtn = document.getElementById('spinBtn');
+const reels = [...document.querySelectorAll('.reel')];
 let spinning = false;
 
-function spinMachine(){
+function reelDataFromDom(reel){
+  const img = reel.querySelector('img');
+  return {
+    id: Number(reel.querySelector('.duel-pick').dataset.id),
+    filename: img.src,
+    uploader: reel.querySelector('.name').textContent,
+    description: reel.querySelector('.desc').textContent
+  }
+}
+
+function applyCandidateToReel(reel, c){
+  reel.querySelector('img').src = `/media/{{ year }}/${c.filename}`;
+  reel.querySelector('.name').textContent = c.uploader || 'Unbekannt';
+  reel.querySelector('.desc').textContent = c.description || '';
+  reel.querySelector('.duel-pick').dataset.id = c.id;
+}
+
+async function spinMachine(){
   if (spinning) return;
   spinning = true;
   machine.classList.add('spinning');
-  setTimeout(() => {
-    window.location.href = `{{ url_for('main.duel_year', year=year) }}`;
-  }, 850);
+
+  const res = await fetch(`/api/duel-spin/{{ year }}`);
+  const data = await res.json();
+  if (!data.success) {
+    spinning = false;
+    machine.classList.remove('spinning');
+    alert(data.error || 'Spin fehlgeschlagen');
+    return;
+  }
+
+  // pool to fake slot cycling
+  const pool = data.candidates;
+  const intervals = [];
+
+  reels.forEach((reel, i) => {
+    const timer = setInterval(() => {
+      const random = pool[Math.floor(Math.random() * pool.length)];
+      applyCandidateToReel(reel, random);
+    }, 90 + (i * 25));
+    intervals.push(timer);
+  });
+
+  // Stop reels one by one, then set final candidates exactly
+  reels.forEach((reel, i) => {
+    setTimeout(() => {
+      clearInterval(intervals[i]);
+      applyCandidateToReel(reel, data.candidates[i]);
+      if (i === reels.length - 1) {
+        spinning = false;
+        machine.classList.remove('spinning');
+      }
+    }, 900 + i * 350);
+  });
 }
 
 lever.addEventListener('click', spinMachine);
 spinBtn.addEventListener('click', spinMachine);
 
-document.querySelectorAll('.duel-pick').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const imageId = btn.dataset.id;
-    const res = await fetch(`/vote/${imageId}`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({voter_session_id: voterSessionId, contest_year: {{ year }}})
-    });
-    const data = await res.json();
-    if (!data.success) {
-      alert(data.error || 'Fehler beim Vote');
-      return;
-    }
-    spinMachine();
+document.body.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.duel-pick');
+  if (!btn || spinning) return;
+
+  const imageId = btn.dataset.id;
+  const res = await fetch(`/vote/${imageId}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({voter_session_id: voterSessionId, contest_year: {{ year }}})
   });
+  const data = await res.json();
+  if (!data.success) return alert(data.error || 'Fehler beim Vote');
+
+  spinMachine();
 });
 </script>
 </body>
