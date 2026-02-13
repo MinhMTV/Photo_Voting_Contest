@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -29,8 +29,8 @@
     <div class="container-fluid px-3">
         <span class="brand">CASINO Photo Voting Contest {{ year }}</span>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('main.archive') }}" class="btn btn-outline-warning btn-sm">🗂️ Archiv</a>
-            <a href="{{ url_for('main.duel_year', year=year) }}" class="btn btn-outline-danger btn-sm">⚔️ Duell</a>
+            <a href="{{ url_for('main.archive') }}" class="btn btn-outline-warning btn-sm">ðŸ—‚ï¸ Archiv</a>
+            <a href="{{ url_for('main.duel_year', year=year) }}" class="btn btn-outline-danger btn-sm">âš”ï¸ Duell</a>
             <a href="{{ url_for('main.public_results_year', year=year) }}" class="btn btn-gold btn-sm">{{ year }} Ergebnisse</a>
             <a href="{{ url_for('main.login') }}" class="btn btn-outline-light btn-sm">Admin</a>
         </div>
@@ -40,8 +40,15 @@
 
 <div class="container py-3">
     <div class="text-center mb-3 d-flex flex-column gap-2 align-items-center">
-        <span class="chip">Du hast noch <strong>{{ votes_left }}</strong> / 3 Stimmen</span>
-        <span class="chip countdown" id="countdown" data-end="{{ voting_end_at }}">Countdown lädt...</span>
+        <span class="chip" id="votesChip">Du hast noch <strong>{{ votes_left }}</strong> / 5 Chips</span>
+        <div class="chip" id="chipPicker">Chips:
+          <button type="button" class="reaction-btn chip-select active" data-chip="2">2</button>
+          <button type="button" class="reaction-btn chip-select" data-chip="5">5</button>
+          <button type="button" class="reaction-btn chip-select" data-chip="10">10</button>
+          <button type="button" class="reaction-btn chip-select" data-chip="20">20</button>
+          <button type="button" class="reaction-btn chip-select" data-chip="all-in">ALL-IN</button>
+        </div>
+        <span class="chip countdown" id="countdown" data-end="{{ voting_end_at }}">Countdown lÃ¤dt...</span>
     </div>
     <div class="row g-3">
         {% for image in images %}
@@ -52,12 +59,13 @@
                 </div>
                 <div class="slot-title">{{ image.uploader or 'Anonymous Player' }}</div>
                 <p class="small text-warning-emphasis">{{ image.description or '' }}</p>
-                <button class="btn btn-sm vote-button {% if image.id in voted_ids %}btn-warning{% else %}btn-outline-warning{% endif %}" data-image-id="{{ image.id }}" data-voted="{{ 'true' if image.id in voted_ids else 'false' }}">{% if image.id in voted_ids %}💥 Gepusht{% else %}🔥 Pushen{% endif %}</button>
+                {% set ub = user_bets.get(image.id|string) %}
+                <button class="btn btn-sm vote-button {% if image.id in voted_ids %}btn-warning{% else %}btn-outline-warning{% endif %}" data-image-id="{{ image.id }}" data-voted="{{ 'true' if image.id in voted_ids else 'false' }}">{% if image.id in voted_ids %}ðŸŽ¯ Chip {{ ub.chip_label if ub else '' }}{% else %}ðŸŽ² Chip setzen{% endif %}</button>
                 <div class="reaction-row">
-                    <button class="reaction-btn {% if 'hype' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="hype">🚀 Hype</button>
-                    <button class="reaction-btn {% if 'creative' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="creative">🎨 Kreativ</button>
-                    <button class="reaction-btn {% if 'funny' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="funny">😂 Funny</button>
-                    <button class="reaction-btn {% if 'underrated' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="underrated">💎 Underrated</button>
+                    <button class="reaction-btn {% if 'hype' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="hype">ðŸš€ Hype</button>
+                    <button class="reaction-btn {% if 'creative' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="creative">ðŸŽ¨ Kreativ</button>
+                    <button class="reaction-btn {% if 'funny' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="funny">ðŸ˜‚ Funny</button>
+                    <button class="reaction-btn {% if 'underrated' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="underrated">ðŸ’Ž Underrated</button>
                 </div>
             </div>
         </div>
@@ -69,14 +77,24 @@
 <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const maxVotes = 3;
+    const maxVotes = 5;
     const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
     localStorage.setItem('voter_session_id', voterSessionId);
     document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
 
     const buttons = document.querySelectorAll('.vote-button');
     const reactionButtons = document.querySelectorAll('.reaction-btn');
-    const votesChip = document.querySelector('.chip');
+    const votesChip = document.getElementById('votesChip');
+    const chipButtons = document.querySelectorAll('.chip-select');
+    let selectedChip = '2';
+
+    chipButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            chipButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedChip = btn.dataset.chip;
+        });
+    });
 
     fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
         const layer = document.getElementById('casino-stickers');
@@ -104,11 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.dataset.voted = isVoted ? 'true' : 'false';
                 btn.classList.toggle('btn-warning', isVoted);
                 btn.classList.toggle('btn-outline-warning', !isVoted);
-                btn.textContent = isVoted ? '💥 Gepusht' : '🔥 Pushen';
+                btn.textContent = isVoted ? 'Chip gesetzt' : `Chip ${selectedChip}`;
             });
 
             const left = Math.max(0, state.votes_left ?? (maxVotes - (state.vote_count || 0)));
-            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;
+            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 5 Chips`;
         } catch (_) {}
     }
 
@@ -139,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`/vote/${imageId}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({voter_session_id: voterSessionId, contest_year: {{ year }}})
+                body: JSON.stringify({voter_session_id: voterSessionId, contest_year: {{ year }}, chip_label: selectedChip})
             });
             const data = await res.json();
             if (!data.success) return alert(data.error || 'Fehler');
@@ -148,10 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.dataset.voted = isVoted ? 'false' : 'true';
             btn.classList.toggle('btn-warning');
             btn.classList.toggle('btn-outline-warning');
-            btn.textContent = isVoted ? '🔥 Pushen' : '💥 Gepusht';
+            btn.textContent = isVoted ? 'Chip setzen' : `Chip ${selectedChip}`;
 
             const left = Math.max(0, maxVotes - data.vote_count);
-            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;
+            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 5 Chips`;
         });
     });
 
@@ -177,3 +195,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+

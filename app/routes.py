@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import zipfile
 from datetime import datetime
@@ -32,7 +32,7 @@ def get_runtime_settings() -> dict:
         'legacy_years': current_app.config.get('LEGACY_CONTEST_YEARS', [2025]),
         'voting_end_at': current_app.config.get('VOTING_END_AT', '2026-12-31T23:59:59'),
         'waiting_text_by_year': {
-            str(base_year): 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.'
+            str(base_year): 'Die Abstimmung lÃ¤uft noch. Ergebnisse werden nach Freigabe verÃ¶ffentlicht.'
         }
     }
     path = _settings_path()
@@ -61,7 +61,7 @@ def current_year() -> int:
 def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
     cfg = settings or get_runtime_settings()
     waiting_map = cfg.get('waiting_text_by_year', {}) or {}
-    return waiting_map.get(str(year), 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.')
+    return waiting_map.get(str(year), 'Die Abstimmung lÃ¤uft noch. Ergebnisse werden nach Freigabe verÃ¶ffentlicht.')
 
 
 def waiting_template_for_year(year: int) -> str:
@@ -156,11 +156,12 @@ def contest_year(year: int):
 
     voter_session_id = request.cookies.get('voter_session_id')
     voted = db.execute(
-        'SELECT image_id FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+        'SELECT image_id, chip_value, chip_label FROM votes WHERE voter_session_id = ? AND contest_year = ?',
         (voter_session_id, year)
     ).fetchall()
     voted_ids = [row['image_id'] for row in voted]
-    votes_left = max(0, 3 - len(voted_ids))
+    user_bets = {str(row['image_id']): {'chip_value': row['chip_value'] or 1, 'chip_label': row['chip_label'] or 'vote'} for row in voted}
+    votes_left = max(0, 5 - len(voted_ids))
 
     user_reactions = {}
     if voter_session_id:
@@ -183,7 +184,8 @@ def contest_year(year: int):
         year=year,
         legacy_years=legacy_years,
         voting_end_at=settings.get('voting_end_at'),
-        user_reactions=user_reactions
+        user_reactions=user_reactions,
+        user_bets=user_bets
     )
 
 
@@ -227,7 +229,7 @@ def duel_spin(year: int):
     ).fetchall()
 
     if len(rows) < 3:
-        return jsonify(success=False, error='Nicht genug Bilder für Duel-Slot'), 400
+        return jsonify(success=False, error='Nicht genug Bilder fÃ¼r Duel-Slot'), 400
 
     return jsonify(success=True, candidates=[{
         'id': r['id'],
@@ -239,32 +241,54 @@ def duel_spin(year: int):
 
 @bp.route('/vote/<int:image_id>', methods=['POST'])
 def vote(image_id):
-    voter_session_id = request.json.get('voter_session_id')
-    contest_year = int(request.json.get('contest_year', current_year()))
+    payload = request.json or {}
+    voter_session_id = payload.get('voter_session_id')
+    contest_year = int(payload.get('contest_year', current_year()))
+    chip_label = (payload.get('chip_label') or '5').strip().lower()
+
+    chip_map = {
+        '2': 2,
+        '5': 5,
+        '10': 10,
+        '20': 20,
+        'all-in': 50,
+        'allin': 50
+    }
+    chip_value = chip_map.get(chip_label, 5)
+    if chip_label not in chip_map:
+        chip_label = str(chip_value)
+
     db = get_db()
 
     vote_exists = db.execute(
-        'SELECT 1 FROM votes WHERE image_id = ? AND voter_session_id = ? AND contest_year = ?',
+        'SELECT id, chip_value FROM votes WHERE image_id = ? AND voter_session_id = ? AND contest_year = ?',
         (image_id, voter_session_id, contest_year)
     ).fetchone()
 
     if vote_exists:
-        db.execute(
-            'DELETE FROM votes WHERE image_id = ? AND voter_session_id = ? AND contest_year = ?',
-            (image_id, voter_session_id, contest_year)
-        )
+        # Same chip => remove vote; different chip => update chip
+        if int(vote_exists['chip_value'] or 0) == chip_value:
+            db.execute(
+                'DELETE FROM votes WHERE id = ?',
+                (vote_exists['id'],)
+            )
+        else:
+            db.execute(
+                'UPDATE votes SET chip_value = ?, chip_label = ? WHERE id = ?',
+                (chip_value, chip_label, vote_exists['id'])
+            )
     else:
         vote_count = db.execute(
             'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
             (voter_session_id, contest_year)
         ).fetchone()[0]
 
-        if vote_count >= 3:
-            return jsonify(success=False, error='Du hast das Stimmenlimit erreicht'), 403
+        if vote_count >= 5:
+            return jsonify(success=False, error='Du hast das Stimmenlimit (5) erreicht'), 403
 
         db.execute(
-            'INSERT INTO votes (image_id, voter_session_id, contest_year) VALUES (?, ?, ?)',
-            (image_id, voter_session_id, contest_year)
+            'INSERT INTO votes (image_id, voter_session_id, contest_year, chip_value, chip_label) VALUES (?, ?, ?, ?, ?)',
+            (image_id, voter_session_id, contest_year, chip_value, chip_label)
         )
 
     db.commit()
@@ -281,7 +305,7 @@ def vote(image_id):
 def voter_state(year: int):
     voter_session_id = request.args.get('voter_session_id', '').strip()
     if not voter_session_id:
-        return jsonify(voted_ids=[], vote_count=0, votes_left=3)
+        return jsonify(voted_ids=[], vote_count=0, votes_left=5)
 
     db = get_db()
     voted = db.execute(
@@ -290,7 +314,7 @@ def voter_state(year: int):
     ).fetchall()
     voted_ids = [row['image_id'] for row in voted]
     vote_count = len(voted_ids)
-    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 3 - vote_count))
+    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 5 - vote_count))
 
 
 @bp.route('/react/<int:image_id>', methods=['POST'])
@@ -302,7 +326,7 @@ def react(image_id):
 
     allowed = {'funny', 'creative', 'underrated', 'hype'}
     if reaction_type not in allowed:
-        return jsonify(success=False, error='Ungültige Reaktion'), 400
+        return jsonify(success=False, error='UngÃ¼ltige Reaktion'), 400
 
     if not voter_session_id:
         return jsonify(success=False, error='Session fehlt'), 400
@@ -551,11 +575,12 @@ def results():
             images.description,
             images.contest_year,
             COUNT(votes.id) as vote_count,
+            COALESCE(SUM(votes.chip_value), 0) as vote_points,
             SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) as hype_count,
             SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
             SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
             SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) as underrated_count,
-            (COUNT(votes.id) * 5
+            (COALESCE(SUM(votes.chip_value), 0)
              + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
              + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
              + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
@@ -605,7 +630,7 @@ def public_results_year(year: int):
             SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
             SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
             SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) as underrated_count,
-            (COUNT(votes.id) * 5
+            (COALESCE(SUM(votes.chip_value), 0)
              + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
              + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
              + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
@@ -674,3 +699,5 @@ def list_stickers_for_year(year: int):
         (year,)
     ).fetchall()
     return jsonify([r['filename'] for r in rows])
+
+

@@ -32,7 +32,7 @@
               <img src="{{ url_for('main.media_year', year=image.contest_year, filename=image.filename) }}" alt="Bild">
               {% if image.uploader %}<p class="text-muted small mt-2"><strong>{{ image.uploader }}</strong></p>{% endif %}
               {% if image.description %}<p>{{ image.description }}</p>{% endif %}
-              <p class="vote-count">✅ Stimmen: {{ image.vote_count }}</p>
+              <p class="vote-count">✅ Stimmen: {{ image.vote_count }} · Chips: {{ image.vote_points or 0 }}</p>
               <p class="small mb-1">🏁 Score: {{ image.weighted_score or 0 }}</p>
               <p class="small text-muted">🚀 {{ image.hype_count or 0 }} · 🎨 {{ image.creative_count or 0 }} · 😂 {{ image.funny_count or 0 }} · 💎 {{ image.underrated_count or 0 }}</p>
           </div>

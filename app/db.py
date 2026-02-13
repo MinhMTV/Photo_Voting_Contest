@@ -67,6 +67,8 @@ def init_db():
     # Lightweight migration for existing DBs
     _ensure_column(db, 'images', 'contest_year', 'contest_year INTEGER DEFAULT 2025')
     _ensure_column(db, 'votes', 'contest_year', 'contest_year INTEGER DEFAULT 2025')
+    _ensure_column(db, 'votes', 'chip_value', 'chip_value INTEGER DEFAULT 1')
+    _ensure_column(db, 'votes', 'chip_label', 'chip_label TEXT DEFAULT "vote"')
 
     # Backfill legacy rows (existing previous contest is treated as 2025)
     db.execute('UPDATE images SET contest_year = 2025 WHERE contest_year IS NULL OR contest_year = 0')
