@@ -8,13 +8,13 @@
   <style>
     :root{--bg:#09050f;--pink:#ff2ea6;--blue:#21d4fd;--gold:#ffb347;--gold2:#ffd166}
     body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 10%,rgba(255,46,166,.25),transparent 35%),radial-gradient(circle at 80% 20%,rgba(33,212,253,.2),transparent 30%),radial-gradient(circle at 50% 100%,rgba(255,179,71,.2),transparent 35%),var(--bg);color:#ffecc3;font-family:"Segoe UI",system-ui,sans-serif}
-    .page{max-width:860px;margin:0 auto;padding:14px 12px 26px}
+    .page{max-width:860px;margin:0 auto;padding:14px 6px 26px}
     .topline{text-align:center;color:#f0d8a8;letter-spacing:.08em;font-weight:700;opacity:.9;text-shadow:0 0 10px rgba(255,179,71,.5)}
     .brand{text-align:center;font-size:2.6rem;font-weight:900;margin:4px 0 10px;background:linear-gradient(90deg,#ffd166 0%,#ff2ea6 45%,#21d4fd 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 20px rgba(255,46,166,.35),0 0 24px rgba(33,212,253,.35)}
 
-    .machine-wrap{position:relative;padding-right:96px}
+    .machine-wrap{position:relative;padding-right:96px;width:100%}
     .machine-body{width:100%}
-    .slot-machine{width:100%;border-radius:28px;padding:14px;background:linear-gradient(180deg,#44205f 0%,#220f33 100%);border:3px solid #ff9f1c;box-shadow:0 0 0 2px rgba(255,209,102,.35) inset,0 0 30px rgba(255,179,71,.45),0 12px 40px rgba(0,0,0,.5)}
+    .slot-machine{width:calc(100vw - 20px);max-width:100%;border-radius:28px;padding:14px;background:linear-gradient(180deg,#44205f 0%,#220f33 100%);border:3px solid #ff9f1c;box-shadow:0 0 0 2px rgba(255,209,102,.35) inset,0 0 30px rgba(255,179,71,.45),0 12px 40px rgba(0,0,0,.5)}
     .bulb-row{height:16px;border-radius:999px;background:#3d183d;border:1px solid rgba(255,196,102,.55);padding:2px 6px;display:flex;gap:4px;justify-content:space-between;margin-bottom:10px}
     .bulb{width:7px;height:7px;border-radius:50%;background:#ffef9f;box-shadow:0 0 8px #ffef9f,0 0 16px #ff6bcb;animation:blink 1.2s infinite alternate}
     .bulb:nth-child(2n){animation-delay:.3s}.bulb:nth-child(3n){animation-delay:.6s}@keyframes blink{from{opacity:.45}to{opacity:1}}
@@ -43,8 +43,8 @@
     .btn-outline-neon{border:1px solid rgba(255,209,102,.75);color:#ffd98f;background:rgba(0,0,0,.25)}
 
     @media (max-width:920px){
-      .page{max-width:680px}
-      .machine-wrap{padding-right:88px}
+      .page{max-width:680px;padding-left:4px;padding-right:4px}
+      .machine-wrap{padding-right:80px}
       .reel-window img{height:180px}
       .reels{min-height:auto}
       .lever-box{position:absolute;right:2px;top:120px;transform:scale(.88);transform-origin:top right}
