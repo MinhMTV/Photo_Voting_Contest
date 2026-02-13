@@ -40,8 +40,8 @@
     <div class="container-fluid px-3">
         <span class="brand">CASINO Photo Voting Contest {{ year }}</span>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('main.archive') }}" class="btn btn-outline-warning btn-sm">ðŸ—‚ï¸ Archiv</a>
-            <a href="{{ url_for('main.duel_year', year=year) }}" class="btn btn-outline-danger btn-sm">âš”ï¸ Duell</a>
+            <a href="{{ url_for('main.archive') }}" class="btn btn-outline-warning btn-sm">Archiv</a>
+            <a href="{{ url_for('main.duel_year', year=year) }}" class="btn btn-outline-danger btn-sm">Duell</a>
             <a href="{{ url_for('main.public_results_year', year=year) }}" class="btn btn-gold btn-sm">{{ year }} Ergebnisse</a>
             <a href="{{ url_for('main.login') }}" class="btn btn-outline-light btn-sm">Admin</a>
         </div>
@@ -60,7 +60,7 @@
           <button type="button" class="reaction-btn chip-select allin" data-chip="all-in">ALL-IN</button>
           <button type="button" class="reaction-btn" id="resetVotesBtn">Reset</button>
         </div>
-        <span class="chip countdown" id="countdown" data-end="{{ voting_end_at }}">Countdown lÃ¤dt...</span>
+        <span class="chip countdown" id="countdown" data-end="{{ voting_end_at }}">Countdown lädt...</span>
     </div>
     <div class="row g-3">
         {% for image in images %}
@@ -75,10 +75,10 @@
                 <p class="small text-warning-emphasis">{{ image.description or '' }}</p>
                 <div class="small text-info">Tippe aufs Bild, um den gewählten Chip zu setzen.</div>
                 <div class="reaction-row">
-                    <button class="reaction-btn {% if 'hype' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="hype">ðŸš€ Hype</button>
-                    <button class="reaction-btn {% if 'creative' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="creative">ðŸŽ¨ Kreativ</button>
-                    <button class="reaction-btn {% if 'funny' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="funny">ðŸ˜‚ Funny</button>
-                    <button class="reaction-btn {% if 'underrated' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="underrated">ðŸ’Ž Underrated</button>
+                    <button class="reaction-btn {% if 'hype' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="hype">Hype</button>
+                    <button class="reaction-btn {% if 'creative' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="creative">Kreativ</button>
+                    <button class="reaction-btn {% if 'funny' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="funny">Funny</button>
+                    <button class="reaction-btn {% if 'underrated' in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="underrated">Underrated</button>
                 </div>
             </div>
         </div>

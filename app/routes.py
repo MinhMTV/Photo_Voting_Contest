@@ -32,7 +32,7 @@ def get_runtime_settings() -> dict:
         'legacy_years': current_app.config.get('LEGACY_CONTEST_YEARS', [2025]),
         'voting_end_at': current_app.config.get('VOTING_END_AT', '2026-12-31T23:59:59'),
         'waiting_text_by_year': {
-            str(base_year): 'Die Abstimmung lÃ¤uft noch. Ergebnisse werden nach Freigabe verÃ¶ffentlicht.'
+            str(base_year): 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.'
         }
     }
     path = _settings_path()
@@ -61,7 +61,7 @@ def current_year() -> int:
 def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
     cfg = settings or get_runtime_settings()
     waiting_map = cfg.get('waiting_text_by_year', {}) or {}
-    return waiting_map.get(str(year), 'Die Abstimmung lÃ¤uft noch. Ergebnisse werden nach Freigabe verÃ¶ffentlicht.')
+    return waiting_map.get(str(year), 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.')
 
 
 def waiting_template_for_year(year: int) -> str:
@@ -415,7 +415,7 @@ def react(image_id):
 
     allowed = {'funny', 'creative', 'underrated', 'hype'}
     if reaction_type not in allowed:
-        return jsonify(success=False, error='UngÃ¼ltige Reaktion'), 400
+        return jsonify(success=False, error='Ungültige Reaktion'), 400
 
     if not voter_session_id:
         return jsonify(success=False, error='Session fehlt'), 400
