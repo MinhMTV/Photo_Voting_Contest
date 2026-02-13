@@ -48,23 +48,23 @@
     .thumbs-layer { position: absolute; inset: 0; z-index: 7; }
     .thumb {
       position: absolute;
-      width: clamp(28px, 4.8vw, 50px);
-      height: clamp(28px, 4.8vw, 50px);
-      border-radius: 50%;
+      width: clamp(30px, 4.6vw, 52px);
+      height: clamp(22px, 3.4vw, 38px);
+      border-radius: 4px;
       object-fit: cover;
-      border: 2px solid #f1d28a;
-      box-shadow: 0 1px 3px rgba(0,0,0,.6);
+      border: 1.5px solid #f1d28a;
+      box-shadow: 0 1px 3px rgba(0,0,0,.55);
       transform: translate(-50%, -50%);
       pointer-events: none;
       background:#000;
     }
     .landing-slot {
       position: absolute;
-      width: clamp(34px, 5.8vw, 58px);
-      height: clamp(34px, 5.8vw, 58px);
-      border-radius: 50%;
-      border: 2px dashed rgba(255,215,120,.95);
-      box-shadow: 0 0 0 2px rgba(30,20,8,.7) inset, 0 0 8px rgba(255,215,120,.45);
+      width: clamp(30px, 4.6vw, 52px);
+      height: clamp(22px, 3.4vw, 38px);
+      border-radius: 4px;
+      border: 2px solid rgba(255,215,120,.95);
+      box-shadow: 0 0 0 2px rgba(30,20,8,.75) inset;
       transform: translate(-50%, -50%);
       pointer-events: none;
       z-index: 6;
@@ -207,6 +207,11 @@ function buildThumbs() {
   const c = wheelSize / 2;
   const thumbRadius = wheelSize * 0.47;
   const landingRadius = wheelSize * 0.25;
+  const count = segmentCount();
+  const segArc = (2 * Math.PI * thumbRadius) / count;
+  const fieldW = Math.max(26, Math.min(56, segArc * 0.88));
+  const fieldH = Math.max(18, Math.min(40, fieldW * 0.72));
+
   thumbsLayer.innerHTML = '';
   landingLayer.innerHTML = '';
 
@@ -223,6 +228,9 @@ function buildThumbs() {
     img.alt = p.uploader || 'Teilnehmer';
     img.style.left = `${tx}px`;
     img.style.top = `${ty}px`;
+    img.style.width = `${fieldW}px`;
+    img.style.height = `${fieldH}px`;
+    img.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
     thumbsLayer.appendChild(img);
 
     const lx = c + (Math.cos(rad) * landingRadius);
@@ -231,6 +239,9 @@ function buildThumbs() {
     slot.className = 'landing-slot';
     slot.style.left = `${lx}px`;
     slot.style.top = `${ly}px`;
+    slot.style.width = `${fieldW}px`;
+    slot.style.height = `${fieldH}px`;
+    slot.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
     landingLayer.appendChild(slot);
   });
 }
@@ -260,10 +271,8 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
-      // Langsames Ausrollen am Ende (lange Slow-Phase)
-      const ease = t < 0.72
-        ? (1 - Math.pow(1 - (t / 0.72), 2.2)) * 0.85
-        : 0.85 + (1 - Math.pow(1 - ((t - 0.72) / 0.28), 4.5)) * 0.15;
+      // Gleichmäßig langsamer bis zum Ende (ohne Bounce/Sprung)
+      const ease = 1 - Math.pow(1 - t, 5);
 
       const angle = -90 + (laps * 360 + (targetAngle + 90)) * ease;
       const radius = startRadius + (endRadius - startRadius) * ease;
@@ -311,7 +320,7 @@ btn.addEventListener('click', async () => {
   wheelAngle += 1800 + Math.floor(Math.random() * 240);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToIndex(targetIndex, wheelAngle, 6200);
+  await animateBallToIndex(targetIndex, wheelAngle, 7200);
 
   appendReveal(step, item);
 
