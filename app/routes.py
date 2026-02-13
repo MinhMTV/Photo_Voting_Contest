@@ -219,6 +219,22 @@ def vote(image_id):
     return jsonify(success=True, vote_count=updated_vote_count)
 
 
+@bp.route('/api/voter-state/<int:year>')
+def voter_state(year: int):
+    voter_session_id = request.args.get('voter_session_id', '').strip()
+    if not voter_session_id:
+        return jsonify(voted_ids=[], vote_count=0, votes_left=3)
+
+    db = get_db()
+    voted = db.execute(
+        'SELECT image_id FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+        (voter_session_id, year)
+    ).fetchall()
+    voted_ids = [row['image_id'] for row in voted]
+    vote_count = len(voted_ids)
+    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 3 - vote_count))
+
+
 @bp.route('/react/<int:image_id>', methods=['POST'])
 def react(image_id):
     payload = request.json or {}

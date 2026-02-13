@@ -74,8 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const maxVotes = 3;
     const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
     localStorage.setItem('voter_session_id', voterSessionId);
+    document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
+
     const buttons = document.querySelectorAll('.vote-button');
     const reactionButtons = document.querySelectorAll('.reaction-btn');
+    const votesChip = document.querySelector('.chip');
 
     fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
         const layer = document.getElementById('casino-stickers');
@@ -90,6 +93,28 @@ document.addEventListener('DOMContentLoaded', () => {
             layer.appendChild(img);
         }
     }).catch(() => {});
+
+    async function syncVoteState() {
+        try {
+            const res = await fetch(`/api/voter-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
+            const state = await res.json();
+            const votedSet = new Set(state.voted_ids || []);
+
+            buttons.forEach(btn => {
+                const imageId = Number(btn.dataset.imageId);
+                const isVoted = votedSet.has(imageId);
+                btn.dataset.voted = isVoted ? 'true' : 'false';
+                btn.classList.toggle('btn-warning', isVoted);
+                btn.classList.toggle('btn-outline-warning', !isVoted);
+                btn.textContent = isVoted ? '💥 Gepusht' : '🔥 Pushen';
+            });
+
+            const left = Math.max(0, state.votes_left ?? (maxVotes - (state.vote_count || 0)));
+            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;
+        } catch (_) {}
+    }
+
+    syncVoteState();
 
     const countdownEl = document.getElementById('countdown');
     const endAt = new Date(countdownEl.dataset.end);
@@ -128,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = isVoted ? '🔥 Pushen' : '💥 Gepusht';
 
             const left = Math.max(0, maxVotes - data.vote_count);
-            document.querySelector('.chip').innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;
+            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;
         });
     });
 
