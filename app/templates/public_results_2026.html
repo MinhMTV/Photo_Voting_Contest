@@ -3,52 +3,145 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ergebnisse {{ year }} – Casino Royale</title>
+  <title>Ergebnisse {{ year }} – Roulette Finale</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body{background:linear-gradient(145deg,#0d0b14,#1c1031);color:#f6e7bf}
+    body{background:radial-gradient(circle at 30% 10%,#2a1b45,#0c0a12 60%);color:#f8e8bb}
+    .shell{max-width:980px;margin:0 auto;padding:20px}
+    .roulette-wrap{background:#151022;border:1px solid #8f6a2d;border-radius:16px;padding:20px;box-shadow:0 0 40px rgba(255,214,123,.12)}
+    .wheel{width:280px;height:280px;border-radius:50%;margin:0 auto;position:relative;
+      background:conic-gradient(#ab1f2d 0 10%,#111 10% 20%,#ab1f2d 20% 30%,#111 30% 40%,#ab1f2d 40% 50%,#111 50% 60%,#ab1f2d 60% 70%,#111 70% 80%,#ab1f2d 80% 90%,#111 90% 100%);
+      border:10px solid #c59b43;transition:transform 3s cubic-bezier(.12,.71,.14,1)}
+    .ball{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;left:50%;top:-8px;transform:translateX(-50%);box-shadow:0 0 12px rgba(255,255,255,.8)}
+    .pointer{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:22px solid #f8d483;margin:0 auto 6px}
+    .slot{min-height:120px;background:#0f0b19;border:1px dashed #8f6a2d;border-radius:12px;padding:12px}
+    .reveal-card img{width:100%;max-height:280px;object-fit:cover;border-radius:12px}
     #winner-stickers{position:fixed;inset:0;pointer-events:none;z-index:3}
-    #winner-stickers img{position:absolute;width:74px;opacity:.85;animation:drift 7s ease-in-out infinite}
-    @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
-    .header{padding:28px 0;text-align:center}
-    .podium{display:flex;gap:16px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
-    .box{width:220px;background:#171124;border:1px solid #906928;border-radius:14px;padding:12px;box-shadow:0 0 20px rgba(255,214,123,.15)}
-    .box img{width:100%;height:240px;object-fit:cover;border-radius:10px}
-    .gold{outline:2px solid #d4a63a;transform:translateY(-10px)}
-    .rank{font-size:1.3rem;margin-top:8px}
-    .chip{display:inline-block;background:#2f2050;border:1px solid #9d7a34;color:#ffd98e;padding:5px 12px;border-radius:999px}
+    #winner-stickers img{position:absolute;width:68px;opacity:.85;animation:drift 6s ease-in-out infinite}
+    @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
   </style>
 </head>
 <body>
-  <div id="winner-stickers"></div>
-  <div class="container py-3">
-    <div class="header">
-      <h1>🎰 Gewinner {{ year }} – Casino Night</h1>
-      <div class="chip">Finale Ergebnisse</div>
-      <div class="mt-3"><a href="{{ url_for('main.contest_year', year=year) }}" class="btn btn-outline-warning btn-sm">Zurück</a></div>
-    </div>
+<div id="winner-stickers"></div>
+<div class="shell">
+  <h1 class="text-center mb-3">🎰 Roulette Finale {{ year }}</h1>
+  <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 → 4 → 3 → 2 → 1</strong>. Drücke jedes Mal auf <strong>„Kugel setzen“</strong>.</p>
 
-    {% if top_images %}
-    <div class="podium mt-4">
-      {% for image in top_images %}
-      <div class="box {% if loop.index == 1 %}gold{% endif %}">
-        <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" alt="{{ image.uploader }}">
-        <div class="rank">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}#{{ loop.index }}{% endif %}</div>
-        <div><strong>{{ image.uploader or 'Anonymous' }}</strong></div>
-        <div class="small text-warning">🪙 {{ image.vote_points or 0 }} Chips</div>
-        <div class="small">{{ image.description or '' }}</div>
+  <div class="roulette-wrap">
+    <div class="row g-4 align-items-center">
+      <div class="col-12 col-md-6 text-center">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel"><div class="ball" id="ball"></div></div>
+        <div class="mt-3">
+          <div class="badge text-bg-dark border border-warning-subtle">Nächster Platz: <span id="nextPlace">5</span></div>
+        </div>
+        <button id="spinBtn" class="btn btn-warning mt-3">Kugel setzen</button>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="slot" id="revealList">
+          <div class="text-muted">Noch keine Platzierungen aufgedeckt.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="top10Section" class="mt-4 d-none">
+    <h3 class="mb-3">🏁 Gesamtübersicht Top 10</h3>
+    <div class="row g-3">
+      {% for image in top_10_images %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="card bg-dark text-light border-warning-subtle h-100">
+          <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ image.uploader }}">
+          <div class="card-body p-2">
+            <div class="small">#{{ loop.index }} · <strong>{{ image.uploader or 'Anonymous' }}</strong></div>
+            <div class="small text-warning">Chips: {{ image.vote_points or 0 }} · Stimmen: {{ image.vote_count or 0 }}</div>
+          </div>
+        </div>
       </div>
       {% endfor %}
     </div>
-    {% else %}
-      <p class="text-center">Noch keine Ergebnisse verfügbar.</p>
-    {% endif %}
   </div>
+</div>
+
+<div class="modal fade" id="winnerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light border-warning">
+      <div class="modal-header">
+        <h5 class="modal-title" id="winnerTitle">Platzierung</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body reveal-card" id="winnerBody"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+const top5 = {{ top_images|tojson }};
+let step = 5;
+let idx = 4; // top5[4] = Platz 5 ... top5[0] = Platz 1
+let spinning = false;
+const wheel = document.getElementById('wheel');
+const btn = document.getElementById('spinBtn');
+const nextPlace = document.getElementById('nextPlace');
+const revealList = document.getElementById('revealList');
+const top10Section = document.getElementById('top10Section');
+const winnerModal = new bootstrap.Modal(document.getElementById('winnerModal'));
+
+function appendReveal(place, item){
+  if (!item) return;
+  if (revealList.querySelector('.text-muted')) revealList.innerHTML = '';
+  const el = document.createElement('div');
+  el.className = 'mb-2 p-2 rounded border border-warning-subtle bg-black';
+  el.innerHTML = `<strong>Platz ${place}:</strong> ${item.uploader || 'Anonymous'} · Chips ${item.vote_points || 0} · Stimmen ${item.vote_count || 0}`;
+  revealList.appendChild(el);
+}
+
+btn.addEventListener('click', () => {
+  if (spinning || step < 1) return;
+  if (!top5.length || idx < 0 || !top5[idx]) {
+    btn.disabled = true;
+    btn.textContent = 'Keine ausreichenden Daten';
+    return;
+  }
+  spinning = true;
+  btn.disabled = true;
+
+  const extra = Math.floor(Math.random() * 360);
+  const base = 1400 + (6 - step) * 180;
+  wheel.style.transform = `rotate(${base + extra}deg)`;
+
+  setTimeout(() => {
+    const item = top5[idx];
+    appendReveal(step, item);
+
+    document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
+    document.getElementById('winnerBody').innerHTML = `
+      <img src="/media/{{ year }}/${item.filename}" alt="winner">
+      <div class="mt-2"><strong>${item.uploader || 'Anonymous'}</strong></div>
+      <div class="small text-warning">Chips: ${item.vote_points || 0} · Stimmen: ${item.vote_count || 0}</div>
+      <div class="small">${item.description || ''}</div>`;
+    winnerModal.show();
+
+    idx -= 1;
+    step -= 1;
+    nextPlace.textContent = step >= 1 ? String(step) : 'Fertig';
+
+    spinning = false;
+    if (step < 1) {
+      btn.disabled = true;
+      btn.textContent = 'Finale abgeschlossen';
+      top10Section.classList.remove('d-none');
+    } else {
+      btn.disabled = false;
+    }
+  }, 3000);
+});
+
 fetch('/api/stickers/{{ year }}').then(r=>r.json()).then(stickers=>{
   if (!stickers || !stickers.length) return;
   const layer=document.getElementById('winner-stickers');
-  const total=Math.min(16, stickers.length);
+  const total=Math.min(14, stickers.length);
   for(let i=0;i<total;i++){
     const img=document.createElement('img');
     img.src=`/sticker/{{ year }}/${stickers[Math.floor(Math.random()*stickers.length)]}`;

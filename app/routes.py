@@ -735,7 +735,7 @@ def public_results_year(year: int):
 
     db = get_db()
 
-    top_images = db.execute('''
+    ranking_rows = db.execute('''
         SELECT
             images.id,
             images.filename,
@@ -758,8 +758,10 @@ def public_results_year(year: int):
         WHERE images.visible = 1 AND images.contest_year = ?
         GROUP BY images.id
         ORDER BY weighted_score DESC, vote_count DESC
-        LIMIT 5
     ''', (year,)).fetchall()
+
+    top_images = ranking_rows[:5]
+    top_10_images = ranking_rows[:10]
 
     templates_dir = os.path.join(current_app.root_path, 'templates')
     year_template_name = f'public_results_{year}.html'
@@ -783,7 +785,7 @@ def public_results_year(year: int):
                 return ('No public results template found', 500)
             template = candidates[-1]
 
-    return render_template(template, top_images=top_images, year=year)
+    return render_template(template, top_images=top_images, top_10_images=top_10_images, year=year)
 
 
 @bp.route('/toggle-publish', methods=['POST'])
