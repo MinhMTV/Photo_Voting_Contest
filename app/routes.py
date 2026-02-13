@@ -762,6 +762,7 @@ def public_results_year(year: int):
 
     top_images = ranking_rows[:5]
     top_10_images = ranking_rows[:10]
+    top_images_json = [dict(r) for r in top_images]
 
     templates_dir = os.path.join(current_app.root_path, 'templates')
     year_template_name = f'public_results_{year}.html'
@@ -785,7 +786,13 @@ def public_results_year(year: int):
                 return ('No public results template found', 500)
             template = candidates[-1]
 
-    return render_template(template, top_images=top_images, top_10_images=top_10_images, year=year)
+    return render_template(
+        template,
+        top_images=top_images,
+        top_10_images=top_10_images,
+        top_images_json=top_images_json,
+        year=year
+    )
 
 
 @bp.route('/toggle-publish', methods=['POST'])
