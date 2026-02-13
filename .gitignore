@@ -1,0 +1,10 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local runtime/state
+instance/
+app/published_flag.txt
+
+# Local uploaded media (generated/test data)
+app/static/uploads_*/
