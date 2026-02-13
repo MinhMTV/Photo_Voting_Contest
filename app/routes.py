@@ -151,7 +151,7 @@ def contest_year(year: int):
     legacy_years = settings.get('legacy_years', [2025])
 
     return render_template(
-        'index_casino_2025.html',
+        'contest_index.html',
         images=images,
         voted_ids=voted_ids,
         votes_left=votes_left,
@@ -511,10 +511,8 @@ def results():
 
 @bp.route('/public-results')
 def public_results():
-    # Keep existing endpoint for old integrations (redirect to latest legacy year)
-    settings = get_runtime_settings()
-    legacy_years = settings.get('legacy_years', [current_year() - 1])
-    return redirect(url_for('main.public_results_year', year=int(legacy_years[0])))
+    # Default should always point to current contest year's public results
+    return redirect(url_for('main.public_results_year', year=current_year()))
 
 
 @bp.route('/public-results/<int:year>')
@@ -546,7 +544,8 @@ def public_results_year(year: int):
         LIMIT 5
     ''', (year,)).fetchall()
 
-    template = 'public_results_2025_casino.html' if year == current_year() else 'public_results.html'
+    year_template = os.path.join(current_app.template_folder, f'public_results_{year}.html')
+    template = f'public_results_{year}.html' if os.path.exists(year_template) else 'public_results.html'
     return render_template(template, top_images=top_images, year=year)
 
 
