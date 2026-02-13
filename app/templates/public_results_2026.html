@@ -200,9 +200,10 @@ function angleForNumber(n) {
 }
 
 function buildNumbers() {
-  const size = document.getElementById('roulette').clientWidth;
-  const c = size / 2;
-  const radius = size * 0.33;
+  const wheelSize = wheel.clientWidth;
+  const c = wheelSize / 2;
+  // Zahlen an den äußeren Rand des inneren Farbkreises
+  const radius = wheelSize * 0.47;
   numbersLayer.innerHTML = '';
 
   rouletteOrder.forEach((n) => {
