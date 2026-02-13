@@ -352,12 +352,13 @@ def voter_state(year: int):
 
     db = get_db()
     voted = db.execute(
-        'SELECT image_id FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+        'SELECT image_id, chip_label FROM votes WHERE voter_session_id = ? AND contest_year = ?',
         (voter_session_id, year)
     ).fetchall()
     voted_ids = [row['image_id'] for row in voted]
     vote_count = len(voted_ids)
-    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 5 - vote_count))
+    bets = [{'image_id': row['image_id'], 'chip_label': (row['chip_label'] or '').lower()} for row in voted]
+    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 5 - vote_count), bets=bets)
 
 
 @bp.route('/api/reset-votes/<int:year>', methods=['POST'])

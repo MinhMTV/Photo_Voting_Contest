@@ -204,12 +204,32 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`/api/voter-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
             const state = await res.json();
-            const votedSet = new Set(state.voted_ids || []);
+            const bets = state.bets || [];
+            const betByImage = new Map(bets.map(b => [Number(b.image_id), (b.chip_label || '').toLowerCase()]));
+
+            usedChips.clear();
             imageCards.forEach(card => {
                 const imageId = Number(card.dataset.imageId);
-                card.classList.toggle('voted', votedSet.has(imageId));
+                const chip = betByImage.get(imageId) || '';
+                const chipEl = card.querySelector('.placed-chip');
+
+                if (chip) {
+                    card.classList.add('voted');
+                    chipEl.classList.add('show');
+                    renderPlacedChip(chipEl, chip);
+                    if (chip === 'all-in' || chip === 'allin') {
+                        ['5','25','50','100','all-in'].forEach(c => usedChips.add(c));
+                    } else {
+                        usedChips.add(chip);
+                    }
+                } else {
+                    card.classList.remove('voted');
+                    chipEl.classList.remove('show');
+                    renderPlacedChip(chipEl, '');
+                }
             });
 
+            refreshChipButtons();
             const left = Math.max(0, state.votes_left ?? (maxVotes - (state.vote_count || 0)));
             votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 5 Chips`;
         } catch (_) {}
@@ -240,8 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
     imageCards.forEach(card => {
         card.addEventListener('click', async () => {
             const imageId = card.dataset.imageId;
-            const chipEl = card.querySelector('.placed-chip');
-            const previousChip = (chipEl.dataset.chipOnImage || '').toLowerCase();
 
             const res = await fetch(`/vote/${imageId}`, {
                 method: 'POST',
@@ -251,41 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (!data.success) return alert(data.error || 'Fehler');
 
-            const cardWasVoted = card.classList.contains('voted');
-            if (cardWasVoted && previousChip === selectedChip) {
-                card.classList.remove('voted');
-                chipEl.classList.remove('show');
-                renderPlacedChip(chipEl, '');
-
-                if (selectedChip === 'all-in') {
-                    ['5','25','50','100','all-in'].forEach(c => usedChips.delete(c));
-                } else {
-                    usedChips.delete(selectedChip);
-                }
-            } else {
-                if (previousChip && previousChip !== selectedChip) {
-                    if (previousChip === 'all-in') {
-                        ['5','25','50','100','all-in'].forEach(c => usedChips.delete(c));
-                    } else {
-                        usedChips.delete(previousChip);
-                    }
-                }
-
-                card.classList.add('voted');
-                chipEl.classList.add('show');
-                renderPlacedChip(chipEl, selectedChip);
-
-                if (selectedChip === 'all-in') {
-                    ['5','25','50','100','all-in'].forEach(c => usedChips.add(c));
-                } else {
-                    usedChips.add(selectedChip);
-                }
-            }
-
-            refreshChipButtons();
+            await syncVoteState();
             if (selectedChip !== 'all-in') selectNextAvailableChip();
-            const left = Math.max(0, maxVotes - data.vote_count);
-            votesChip.innerHTML = `Du hast noch <strong>${left}</strong> / 5 Chips`;
         });
     });
 
