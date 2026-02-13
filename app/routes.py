@@ -517,6 +517,12 @@ def public_results():
 
 @bp.route('/public-results/<int:year>')
 def public_results_year(year: int):
+    # Hide current year's public results until admin publishes them
+    flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
+    published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
+    if year == current_year() and not published:
+        return render_template('public_waiting.html')
+
     db = get_db()
 
     top_images = db.execute('''
