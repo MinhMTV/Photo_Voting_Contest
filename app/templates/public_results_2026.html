@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ergebnisse {{ year }} â€“ Roulette Finale</title>
+  <title>Ergebnisse {{ year }} – Roulette Finale</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     html, body { margin: 0; padding: 0; }
@@ -113,8 +113,8 @@
 <body>
 <div id="winner-stickers"></div>
 <div class="shell">
-  <h1 class="text-center mb-3">ðŸŽ° Roulette Finale {{ year }}</h1>
-  <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 â†’ 4 â†’ 3 â†’ 2 â†’ 1</strong>. DrÃ¼cke jedes Mal auf <strong>â€žKugel setzenâ€œ</strong>.</p>
+  <h1 class="text-center mb-3">🎰 Roulette Finale {{ year }}</h1>
+  <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 → 4 → 3 → 2 → 1</strong>. Drücke jedes Mal auf <strong>„Kugel setzen“</strong>.</p>
 
   <div class="roulette-wrap">
     <div class="row g-3 align-items-start">
@@ -127,7 +127,7 @@
           <div class="ball" id="ball"></div>
         </div>
         <div class="mt-3">
-          <div class="badge text-bg-dark border border-warning-subtle">NÃ¤chster Platz: <span id="nextPlace">5</span></div>
+          <div class="badge text-bg-dark border border-warning-subtle">Nächster Platz: <span id="nextPlace">5</span></div>
         </div>
         <button id="spinBtn" class="btn btn-warning mt-3">Kugel setzen</button>
       </div>
@@ -144,15 +144,15 @@
   </div>
 
   <div id="top10Section" class="mt-4 d-none">
-    <h3 class="mb-3">ðŸ GesamtÃ¼bersicht Top 10</h3>
+    <h3 class="mb-3">🏁 Gesamtübersicht Top 10</h3>
     <div class="row g-3">
       {% for image in top_10_images %}
       <div class="col-6 col-md-4 col-lg-3">
         <div class="card bg-dark text-light border-warning-subtle h-100">
           <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ image.uploader }}">
           <div class="card-body p-2">
-            <div class="small">#{{ loop.index }} Â· <strong>{{ image.uploader or 'Anonymous' }}</strong></div>
-            <div class="small text-warning">Chips: {{ image.vote_points or 0 }} Â· Stimmen: {{ image.vote_count or 0 }}</div>
+            <div class="small">#{{ loop.index }} · <strong>{{ image.uploader or 'Anonymous' }}</strong></div>
+            <div class="small text-warning">Chips: {{ image.vote_points or 0 }} · Stimmen: {{ image.vote_count or 0 }}</div>
           </div>
         </div>
       </div>
@@ -214,7 +214,7 @@ if (!participants.length || step === 0) {
 }
 
 function colorForIndex(i) {
-  if (i === 0) return '#1f8d3f'; // ein grÃ¼nes Feld
+  if (i === 0) return '#1f8d3f'; // ein grünes Feld
   return i % 2 === 0 ? '#111' : '#ba2323';
 }
 
@@ -315,15 +315,15 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
     const start = performance.now();
     const laps = 9;
     const baseTarget = angleForIndex(targetIndex);
-    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berÃ¼cksichtigen
+    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
     const size = document.getElementById('roulette').clientWidth;
-    const startRadius = size * 0.44; // startet im grauen AuÃŸenbereich
+    const startRadius = size * 0.44; // startet im grauen Außenbereich
     const endRadius = size * 0.25;   // landet auf inneren Feldern
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
-      // Physikalisch wirkende gleichmÃ¤ÃŸige VerzÃ¶gerung: v(t) fÃ¤llt linear bis 0
+      // Smooth deceleration toward target (no bounce)
       const angleEase = 1 - Math.pow(1 - t, 6.5);
       const radialEase = 1 - Math.pow(1 - t, 3.2);
 
@@ -399,7 +399,7 @@ btn.addEventListener('click', async () => {
     top10Section.classList.remove('d-none');
   } else {
     btn.disabled = false;
-    // Kugel bleibt auf dem getroffenen Feld liegen bis zum nÃ¤chsten Spin
+    // Kugel bleibt auf dem getroffenen Feld liegen bis zum nächsten Spin
   }
 });
 
@@ -419,6 +419,7 @@ fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
 </script>
 </body>
 </html>
+
 
 
 
