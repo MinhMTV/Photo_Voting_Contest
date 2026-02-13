@@ -19,6 +19,9 @@
         .chip{display:inline-block;padding:4px 10px;border-radius:999px;background:#301d57;color:#ffe8a7;border:1px solid #8d6b2f}
         .slot-title{font-size:1.1rem;color:#ffdf8e}
         .countdown{font-weight:700;color:#ffdf8e;text-shadow:0 0 8px rgba(255,215,120,.25)}
+        .reaction-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+        .reaction-btn{border:1px solid #8d6b2f;background:#221538;color:#ffd98e;border-radius:999px;padding:4px 10px;font-size:.8rem}
+        .reaction-btn.active{background:#d4a63a;color:#1f1300;border-color:#d4a63a}
     </style>
 </head>
 <body>
@@ -52,6 +55,12 @@
                 <div class="slot-title">{{ image.uploader or 'Anonymous Player' }}</div>
                 <p class="small text-warning-emphasis">{{ image.description or '' }}</p>
                 <button class="btn btn-sm vote-button {% if image.id in voted_ids %}btn-warning{% else %}btn-outline-warning{% endif %}" data-image-id="{{ image.id }}" data-voted="{{ 'true' if image.id in voted_ids else 'false' }}">{% if image.id in voted_ids %}💥 Gepusht{% else %}🔥 Pushen{% endif %}</button>
+                <div class="reaction-row">
+                    <button class="reaction-btn {% if 'hype' in (user_reactions.get(image.id|string, set())) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="hype">🚀 Hype</button>
+                    <button class="reaction-btn {% if 'creative' in (user_reactions.get(image.id|string, set())) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="creative">🎨 Kreativ</button>
+                    <button class="reaction-btn {% if 'funny' in (user_reactions.get(image.id|string, set())) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="funny">😂 Funny</button>
+                    <button class="reaction-btn {% if 'underrated' in (user_reactions.get(image.id|string, set())) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="underrated">💎 Underrated</button>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -66,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
     localStorage.setItem('voter_session_id', voterSessionId);
     const buttons = document.querySelectorAll('.vote-button');
+    const reactionButtons = document.querySelectorAll('.reaction-btn');
 
     fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
         const layer = document.getElementById('casino-stickers');
@@ -89,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(diff <= 0){
             countdownEl.textContent = 'Voting beendet';
             buttons.forEach(b => b.disabled = true);
+            reactionButtons.forEach(b => b.disabled = true);
             return;
         }
         const d = Math.floor(diff / (1000*60*60*24));
@@ -118,6 +129,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const left = Math.max(0, maxVotes - data.vote_count);
             document.querySelector('.chip').innerHTML = `Du hast noch <strong>${left}</strong> / 3 Stimmen`;
+        });
+    });
+
+    reactionButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const imageId = btn.dataset.imageId;
+            const reactionType = btn.dataset.reaction;
+            const res = await fetch(`/react/${imageId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    voter_session_id: voterSessionId,
+                    contest_year: {{ year }},
+                    reaction_type: reactionType
+                })
+            });
+            const data = await res.json();
+            if (!data.success) return alert(data.error || 'Fehler');
+            btn.classList.toggle('active', data.active);
         });
     });
 });

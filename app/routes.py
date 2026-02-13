@@ -137,6 +137,16 @@ def contest_year(year: int):
     voted_ids = [row['image_id'] for row in voted]
     votes_left = max(0, 3 - len(voted_ids))
 
+    user_reactions = {}
+    if voter_session_id:
+        reaction_rows = db.execute(
+            'SELECT image_id, reaction_type FROM reactions WHERE voter_session_id = ? AND contest_year = ?',
+            (voter_session_id, year)
+        ).fetchall()
+        for row in reaction_rows:
+            key = str(row['image_id'])
+            user_reactions.setdefault(key, set()).add(row['reaction_type'])
+
     settings = get_runtime_settings()
     legacy_years = settings.get('legacy_years', [2025])
 
@@ -147,7 +157,8 @@ def contest_year(year: int):
         votes_left=votes_left,
         year=year,
         legacy_years=legacy_years,
-        voting_end_at=settings.get('voting_end_at')
+        voting_end_at=settings.get('voting_end_at'),
+        user_reactions=user_reactions
     )
 
 
@@ -206,6 +217,46 @@ def vote(image_id):
     ).fetchone()[0]
 
     return jsonify(success=True, vote_count=updated_vote_count)
+
+
+@bp.route('/react/<int:image_id>', methods=['POST'])
+def react(image_id):
+    payload = request.json or {}
+    voter_session_id = payload.get('voter_session_id')
+    contest_year = int(payload.get('contest_year', current_year()))
+    reaction_type = (payload.get('reaction_type') or '').strip().lower()
+
+    allowed = {'funny', 'creative', 'underrated', 'hype'}
+    if reaction_type not in allowed:
+        return jsonify(success=False, error='Ungültige Reaktion'), 400
+
+    if not voter_session_id:
+        return jsonify(success=False, error='Session fehlt'), 400
+
+    db = get_db()
+    exists = db.execute(
+        'SELECT id FROM reactions WHERE image_id = ? AND voter_session_id = ? AND reaction_type = ? AND contest_year = ?',
+        (image_id, voter_session_id, reaction_type, contest_year)
+    ).fetchone()
+
+    active = False
+    if exists:
+        db.execute('DELETE FROM reactions WHERE id = ?', (exists['id'],))
+    else:
+        db.execute(
+            'INSERT INTO reactions (image_id, voter_session_id, reaction_type, contest_year, created_at) VALUES (?, ?, ?, ?, ?)',
+            (image_id, voter_session_id, reaction_type, contest_year, datetime.now().isoformat())
+        )
+        active = True
+
+    db.commit()
+
+    count = db.execute(
+        'SELECT COUNT(*) FROM reactions WHERE image_id = ? AND contest_year = ? AND reaction_type = ?',
+        (image_id, contest_year, reaction_type)
+    ).fetchone()[0]
+
+    return jsonify(success=True, active=active, count=count, reaction_type=reaction_type)
 
 
 @bp.route('/login', methods=['GET', 'POST'])
@@ -409,12 +460,28 @@ def results():
     # Legacy admin results page preserved
     db = get_db()
     top_images = db.execute('''
-        SELECT images.id, images.filename, images.uploader, images.description, images.contest_year, COUNT(votes.id) as vote_count
+        SELECT
+            images.id,
+            images.filename,
+            images.uploader,
+            images.description,
+            images.contest_year,
+            COUNT(votes.id) as vote_count,
+            SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) as hype_count,
+            SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
+            SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
+            SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) as underrated_count,
+            (COUNT(votes.id) * 5
+             + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
+             + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
+             + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
+             + SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) * 1) as weighted_score
         FROM images
         LEFT JOIN votes ON images.id = votes.image_id
-        WHERE votes.id IS NOT NULL
+        LEFT JOIN reactions ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
+        WHERE votes.id IS NOT NULL OR reactions.id IS NOT NULL
         GROUP BY images.id
-        ORDER BY vote_count DESC
+        ORDER BY weighted_score DESC, vote_count DESC
     ''').fetchall()
 
     total_votes = db.execute('SELECT COUNT(*) FROM votes WHERE id IS NOT NULL').fetchone()[0]
@@ -439,13 +506,27 @@ def public_results_year(year: int):
     db = get_db()
 
     top_images = db.execute('''
-        SELECT images.id, images.filename, images.uploader, images.description,
-               COUNT(votes.id) as vote_count
+        SELECT
+            images.id,
+            images.filename,
+            images.uploader,
+            images.description,
+            COUNT(votes.id) as vote_count,
+            SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) as hype_count,
+            SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
+            SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
+            SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) as underrated_count,
+            (COUNT(votes.id) * 5
+             + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
+             + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
+             + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
+             + SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) * 1) as weighted_score
         FROM images
         LEFT JOIN votes ON images.id = votes.image_id
+        LEFT JOIN reactions ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
         WHERE images.visible = 1 AND images.contest_year = ?
         GROUP BY images.id
-        ORDER BY vote_count DESC
+        ORDER BY weighted_score DESC, vote_count DESC
         LIMIT 5
     ''', (year,)).fetchall()
 
