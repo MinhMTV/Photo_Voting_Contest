@@ -67,9 +67,16 @@ def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
 def waiting_template_for_year(year: int) -> str:
     templates_dir = os.path.join(current_app.root_path, 'templates')
     year_name = f'public_waiting_{year}.html'
-    if os.path.exists(os.path.join(templates_dir, year_name)):
-        return year_name
-    return 'public_waiting.html'
+    year_path = os.path.join(templates_dir, year_name)
+
+    # Enforce year-specific waiting templates. If missing, bootstrap from base template once.
+    if not os.path.exists(year_path):
+        base_path = os.path.join(templates_dir, 'public_waiting.html')
+        if os.path.exists(base_path):
+            with open(base_path, 'r', encoding='utf-8') as src, open(year_path, 'w', encoding='utf-8') as dst:
+                dst.write(src.read())
+
+    return year_name
 
 
 def upload_folder_for_year(year: int) -> str:
