@@ -69,6 +69,20 @@
       pointer-events: none;
       background:#000;
     }
+    .thumb-num {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-size: clamp(10px, 1.1vw, 14px);
+      font-weight: 700;
+      color: #ffe7b0;
+      text-shadow: 0 1px 2px rgba(0,0,0,.9);
+      z-index: 8;
+      pointer-events: none;
+    }
+    .legend-list { max-height: 320px; overflow: auto; }
+    .legend-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .legend-num { min-width:34px; text-align:center; border:1px solid #b98f3e; border-radius:6px; color:#ffd98e; font-weight:700; }
+    .legend-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     .ball {
       width: 26px; height: 26px; border-radius: 50%;
@@ -112,6 +126,10 @@
         <button id="spinBtn" class="btn btn-warning mt-3">Kugel setzen</button>
       </div>
       <div class="col-12 col-lg-5">
+        <div class="slot mb-3" id="numberLegend">
+          <div class="fw-semibold mb-2">🎯 Zahlen-Legende</div>
+          <div class="legend-list" id="legendList"></div>
+        </div>
         <div class="slot" id="revealList">
           <div class="text-muted">Noch keine Platzierungen aufgedeckt.</div>
         </div>
@@ -164,10 +182,26 @@ const fieldRing = document.getElementById('fieldRing');
 const btn = document.getElementById('spinBtn');
 const nextPlace = document.getElementById('nextPlace');
 const revealList = document.getElementById('revealList');
+const legendList = document.getElementById('legendList');
 const top10Section = document.getElementById('top10Section');
 const winnerModal = new bootstrap.Modal(document.getElementById('winnerModal'));
 
 const participants = (rankingImages || []).filter(x => x && x.filename);
+
+function shuffledNumbers() {
+  const arr = Array.from({ length: 36 }, (_, i) => i + 1);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+const numPool = shuffledNumbers();
+const participantNumberById = new Map();
+participants.forEach((p, i) => {
+  participantNumberById.set(Number(p.id), numPool[i % 36]);
+});
 if (!participants.length || step === 0) {
   btn.disabled = true;
   btn.textContent = 'Keine Teilnehmer';
@@ -201,6 +235,23 @@ function findParticipantIndexByImageId(imageId) {
   return idx >= 0 ? idx : 0;
 }
 
+function buildLegend() {
+  if (!legendList) return;
+  legendList.innerHTML = '';
+  const rows = participants.map(p => ({
+    id: Number(p.id),
+    name: p.uploader || 'Anonymous',
+    n: participantNumberById.get(Number(p.id)) || 0
+  })).sort((a,b) => a.n - b.n);
+
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'legend-item';
+    row.innerHTML = `<span class="legend-num">${r.n}</span><span class="legend-name">${r.name}</span>`;
+    legendList.appendChild(row);
+  });
+}
+
 function buildThumbs() {
   const wheelSize = wheel.clientWidth;
   const c = wheelSize / 2;
@@ -227,6 +278,17 @@ function buildThumbs() {
     img.style.height = `${fieldH}px`;
     img.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
     thumbsLayer.appendChild(img);
+
+    const n = participantNumberById.get(Number(p.id)) || 0;
+    const nr = thumbRadius + (fieldH * 0.78);
+    const nx = c + (Math.cos(rad) * nr);
+    const ny = c + (Math.sin(rad) * nr);
+    const numEl = document.createElement('div');
+    numEl.className = 'thumb-num';
+    numEl.textContent = String(n);
+    numEl.style.left = `${nx}px`;
+    numEl.style.top = `${ny}px`;
+    thumbsLayer.appendChild(numEl);
   });
 }
 
@@ -277,13 +339,15 @@ function appendReveal(place, item) {
   if (revealList.querySelector('.text-muted')) revealList.innerHTML = '';
   const el = document.createElement('div');
   el.className = 'mb-2 p-2 rounded border border-warning-subtle bg-black';
-  el.innerHTML = `<strong>Platz ${place}:</strong> ${item.uploader || 'Anonymous'} Â· Chips ${item.vote_points || 0} Â· Stimmen ${item.vote_count || 0}`;
+  const n = participantNumberById.get(Number(item.id)) || '-';
+  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonymous'} · Chips ${item.vote_points || 0} · Stimmen ${item.vote_count || 0}`;
   revealList.appendChild(el);
 }
 
 applyWheelColors();
 buildThumbs();
-nextPlace.textContent = step > 0 ? String(step) : 'â€“';
+buildLegend();
+nextPlace.textContent = step > 0 ? String(step) : '–';
 setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.44);
 window.addEventListener('resize', () => {
   buildThumbs();
@@ -309,11 +373,12 @@ btn.addEventListener('click', async () => {
 
   appendReveal(step, item);
 
-  document.getElementById('winnerTitle').textContent = `ðŸŽ‰ Platz ${step}`;
+  const n = participantNumberById.get(Number(item.id)) || '-';
+  document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
   document.getElementById('winnerBody').innerHTML = `
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
-    <div class="mt-2"><strong>${item.uploader || 'Anonymous'}</strong></div>
-    <div class="small text-warning">Chips: ${item.vote_points || 0} Â· Stimmen: ${item.vote_count || 0}</div>
+    <div class="mt-2"><strong>#${n} ${item.uploader || 'Anonymous'}</strong></div>
+    <div class="small text-warning">Chips: ${item.vote_points || 0} · Stimmen: ${item.vote_count || 0}</div>
     <div class="small">${item.description || ''}</div>`;
   winnerModal.show();
 
