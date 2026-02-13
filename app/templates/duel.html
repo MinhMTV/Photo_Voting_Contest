@@ -59,6 +59,7 @@
   <div class="page">
     <div class="topline">Las Vegas × Monte Carlo</div>
     <div class="brand">Neon Royale</div>
+    <div class="text-center mb-2"><span class="badge text-bg-warning" id="spinsBadge">Spins übrig: 10 / 10</span></div>
 
     <div class="machine-wrap" id="machineWrap">
       <div class="slot-machine">
@@ -90,7 +91,9 @@ const machine = document.getElementById('machineWrap');
 const lever = document.getElementById('lever');
 const reels = [...document.querySelectorAll('.reel')];
 const feedback = document.getElementById('voteFeedback');
+const spinsBadge = document.getElementById('spinsBadge');
 let spinning = false;
+let duelRemaining = 10;
 
 function applyCandidateToReel(reel, c){
   reel.classList.remove('voted');
@@ -103,12 +106,24 @@ function applyCandidateToReel(reel, c){
   b.dataset.id = c.id;
 }
 
+function updateSpinsBadge() {
+  spinsBadge.textContent = `Spins übrig: ${duelRemaining} / 10`;
+}
+
+async function loadDuelState() {
+  const res = await fetch(`/api/duel-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
+  const data = await res.json();
+  duelRemaining = data.remaining ?? 10;
+  updateSpinsBadge();
+}
+
 async function spinMachine(){
   if (spinning) return;
+  if (duelRemaining <= 0) return alert('Keine Spins mehr übrig');
   spinning = true;
   machine.classList.add('spinning');
 
-  const res = await fetch(`/api/duel-spin/{{ year }}`);
+  const res = await fetch(`/api/duel-spin/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
   const data = await res.json();
   if (!data.success) {
     spinning = false;
@@ -136,6 +151,7 @@ async function spinMachine(){
 }
 
 lever.addEventListener('click', spinMachine);
+loadDuelState();
 
 document.body.addEventListener('click', async (e) => {
   const btn = e.target.closest('.duel-pick');
@@ -143,7 +159,7 @@ document.body.addEventListener('click', async (e) => {
 
   const reel = btn.closest('.reel');
   const imageId = btn.dataset.id;
-  const res = await fetch(`/vote/${imageId}`, {
+  const res = await fetch(`/api/duel-vote/${imageId}`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({voter_session_id: voterSessionId, contest_year: {{ year }}})
@@ -151,13 +167,18 @@ document.body.addEventListener('click', async (e) => {
   const data = await res.json();
   if (!data.success) return alert(data.error || 'Fehler beim Vote');
 
+  duelRemaining = data.remaining ?? duelRemaining;
+  updateSpinsBadge();
+
   reel.classList.add('voted');
   btn.classList.add('voted');
   btn.textContent = 'Gevotet';
   feedback.classList.add('show');
   setTimeout(() => feedback.classList.remove('show'), 900);
 
-  setTimeout(() => spinMachine(), 650);
+  if (duelRemaining > 0) {
+    setTimeout(() => spinMachine(), 650);
+  }
 });
 </script>
 </body>

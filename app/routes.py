@@ -222,8 +222,31 @@ def duel_year(year: int):
     return render_template('duel.html', year=year, candidates=candidates)
 
 
+def duel_spins_used(voter_session_id: str, year: int) -> int:
+    db = get_db()
+    return db.execute(
+        'SELECT COUNT(*) FROM duel_votes WHERE voter_session_id = ? AND contest_year = ?',
+        (voter_session_id, year)
+    ).fetchone()[0]
+
+
+@bp.route('/api/duel-state/<int:year>')
+def duel_state(year: int):
+    voter_session_id = (request.args.get('voter_session_id') or '').strip()
+    if not voter_session_id:
+        return jsonify(success=True, used=0, remaining=10)
+    used = duel_spins_used(voter_session_id, year)
+    return jsonify(success=True, used=used, remaining=max(0, 10 - used))
+
+
 @bp.route('/api/duel-spin/<int:year>')
 def duel_spin(year: int):
+    voter_session_id = (request.args.get('voter_session_id') or '').strip()
+    if voter_session_id:
+        used = duel_spins_used(voter_session_id, year)
+        if used >= 10:
+            return jsonify(success=False, error='Keine Spins mehr übrig', remaining=0), 403
+
     db = get_db()
     rows = db.execute(
         'SELECT id, filename, uploader, description FROM images WHERE visible = 1 AND contest_year = ? ORDER BY RANDOM() LIMIT 3',
@@ -231,7 +254,7 @@ def duel_spin(year: int):
     ).fetchall()
 
     if len(rows) < 3:
-        return jsonify(success=False, error='Nicht genug Bilder fÃ¼r Duel-Slot'), 400
+        return jsonify(success=False, error='Nicht genug Bilder für Duel-Slot'), 400
 
     return jsonify(success=True, candidates=[{
         'id': r['id'],
@@ -239,6 +262,30 @@ def duel_spin(year: int):
         'uploader': r['uploader'] or 'Unbekannt',
         'description': r['description'] or ''
     } for r in rows])
+
+
+@bp.route('/api/duel-vote/<int:image_id>', methods=['POST'])
+def duel_vote(image_id: int):
+    payload = request.json or {}
+    voter_session_id = (payload.get('voter_session_id') or '').strip()
+    contest_year = int(payload.get('contest_year', current_year()))
+
+    if not voter_session_id:
+        return jsonify(success=False, error='Session fehlt'), 400
+
+    used = duel_spins_used(voter_session_id, contest_year)
+    if used >= 10:
+        return jsonify(success=False, error='Keine Spins mehr übrig', remaining=0), 403
+
+    db = get_db()
+    db.execute(
+        'INSERT INTO duel_votes (image_id, voter_session_id, contest_year, created_at) VALUES (?, ?, ?, ?)',
+        (image_id, voter_session_id, contest_year, datetime.now().isoformat())
+    )
+    db.commit()
+
+    used_after = duel_spins_used(voter_session_id, contest_year)
+    return jsonify(success=True, used=used_after, remaining=max(0, 10 - used_after))
 
 
 @bp.route('/vote/<int:image_id>', methods=['POST'])

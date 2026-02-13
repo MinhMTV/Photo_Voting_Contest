@@ -62,6 +62,14 @@ def init_db():
             created_at TEXT,
             UNIQUE(image_id, voter_session_id, reaction_type, contest_year)
         );
+
+        CREATE TABLE IF NOT EXISTS duel_votes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            image_id INTEGER NOT NULL,
+            voter_session_id TEXT NOT NULL,
+            contest_year INTEGER DEFAULT 2025,
+            created_at TEXT
+        );
     ''')
 
     # Lightweight migration for existing DBs
