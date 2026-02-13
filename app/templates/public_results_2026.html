@@ -154,7 +154,7 @@
     @keyframes drift { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-16px) } }
 
     .casino-fx {
-      position: absolute; inset: -6%; pointer-events: none; z-index: 14; display: none;
+      position: absolute; inset: -6%; pointer-events: none; z-index: 14; display: block;
     }
     .casino-fx.active { display: block; }
 
@@ -212,10 +212,34 @@
       from { transform: translateY(0) scale(1); opacity: 1; }
       to { transform: translateY(-58px) scale(0.12); opacity: 0; }
     }
+
+    #global-party {
+      position: fixed; inset: 0; pointer-events: none; z-index: 25; overflow: hidden;
+    }
+    .party-orb {
+      position: absolute;
+      width: clamp(16px, 2.4vw, 34px);
+      height: clamp(16px, 2.4vw, 34px);
+      border-radius: 50%;
+      filter: blur(.2px) drop-shadow(0 0 10px rgba(255,255,255,.55));
+      opacity: .85;
+      animation: orbitFloat linear infinite;
+    }
+    .party-orb.pink { background: radial-gradient(circle, #ffd0ec, #ff2e96); }
+    .party-orb.blue { background: radial-gradient(circle, #c7f2ff, #2ab7ff); }
+    .party-orb.gold { background: radial-gradient(circle, #fff2bf, #ffbf2a); }
+    @keyframes orbitFloat {
+      0% { transform: translate3d(0,0,0) scale(1); }
+      25% { transform: translate3d(30px,-22px,0) scale(1.12); }
+      50% { transform: translate3d(-18px,-48px,0) scale(.92); }
+      75% { transform: translate3d(-34px,16px,0) scale(1.08); }
+      100% { transform: translate3d(0,0,0) scale(1); }
+    }
   </style>
 </head>
 <body>
 <div id="winner-stickers"></div>
+<div id="global-party"></div>
 <div class="shell">
   <h1 class="text-center mb-3">🎰 Roulette Finale {{ year }}</h1>
   <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 → 4 → 3 → 2 → 1</strong>. Drücke jedes Mal auf <strong>„Kugel setzen“</strong>.</p>
@@ -496,12 +520,28 @@ function stopCasinoCelebrate() {
     sparkleTimer = null;
   }
   if (sparkles) sparkles.innerHTML = '';
-  if (casinoFx) casinoFx.classList.remove('active');
+}
+
+function initGlobalParty() {
+  const gp = document.getElementById('global-party');
+  if (!gp) return;
+  gp.innerHTML = '';
+  const colors = ['pink','blue','gold'];
+  for (let i = 0; i < 20; i++) {
+    const o = document.createElement('div');
+    o.className = `party-orb ${colors[i % colors.length]}`;
+    o.style.left = `${Math.random() * 100}%`;
+    o.style.top = `${Math.random() * 100}%`;
+    o.style.animationDuration = `${7 + Math.random() * 9}s`;
+    o.style.animationDelay = `${Math.random() * 5}s`;
+    gp.appendChild(o);
+  }
 }
 
 applyWheelColors();
 buildThumbs();
 buildLegend();
+initGlobalParty();
 nextPlace.textContent = step > 0 ? String(step) : '–';
 setBallPolar(-90, document.getElementById('roulette').clientWidth * 0.44);
 window.addEventListener('resize', () => {
