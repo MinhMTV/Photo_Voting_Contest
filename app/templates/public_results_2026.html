@@ -6,19 +6,101 @@
   <title>Ergebnisse {{ year }} – Roulette Finale</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body{background:radial-gradient(circle at 30% 10%,#2a1b45,#0c0a12 60%);color:#f8e8bb}
-    .shell{max-width:980px;margin:0 auto;padding:20px}
-    .roulette-wrap{background:#151022;border:1px solid #8f6a2d;border-radius:16px;padding:20px;box-shadow:0 0 40px rgba(255,214,123,.12)}
-    .wheel{width:280px;height:280px;border-radius:50%;margin:0 auto;position:relative;
-      background:conic-gradient(#ab1f2d 0 10%,#111 10% 20%,#ab1f2d 20% 30%,#111 30% 40%,#ab1f2d 40% 50%,#111 50% 60%,#ab1f2d 60% 70%,#111 70% 80%,#ab1f2d 80% 90%,#111 90% 100%);
-      border:10px solid #c59b43;transition:transform 3s cubic-bezier(.12,.71,.14,1)}
-    .ball{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;left:50%;top:-8px;transform:translateX(-50%);box-shadow:0 0 12px rgba(255,255,255,.8)}
-    .pointer{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:22px solid #f8d483;margin:0 auto 6px}
-    .slot{min-height:120px;background:#0f0b19;border:1px dashed #8f6a2d;border-radius:12px;padding:12px}
-    .reveal-card img{width:100%;max-height:280px;object-fit:cover;border-radius:12px}
-    #winner-stickers{position:fixed;inset:0;pointer-events:none;z-index:3}
-    #winner-stickers img{position:absolute;width:68px;opacity:.85;animation:drift 6s ease-in-out infinite}
-    @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+    body { background: radial-gradient(circle at 30% 10%, #2a1b45, #0c0a12 60%); color: #f8e8bb; }
+    .shell { max-width: 1050px; margin: 0 auto; padding: 20px; }
+    .roulette-wrap { background: #151022; border: 1px solid #8f6a2d; border-radius: 16px; padding: 20px; box-shadow: 0 0 40px rgba(255,214,123,.12); }
+
+    .roulette { width: 360px; height: 360px; margin: 0 auto; position: relative; }
+    .outer-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: radial-gradient(circle, #7b5520 58%, #5f3f14 100%);
+      box-shadow: inset 0 0 0 6px #c59b43, inset 0 0 25px rgba(0,0,0,.4);
+    }
+    .track-ring {
+      position: absolute; inset: 28px; border-radius: 50%;
+      background: radial-gradient(circle, #7d7d7d 0%, #5f5f5f 70%, #4b4b4b 100%);
+      box-shadow: inset 0 0 0 2px #9f9f9f;
+    }
+    .wheel {
+      position: absolute; inset: 58px; border-radius: 50%;
+      border: 4px solid #d1aa52;
+      box-shadow: 0 0 20px rgba(0,0,0,.45), inset 0 0 0 2px #2b1d0b;
+      transition: transform 3.8s cubic-bezier(.12,.71,.14,1);
+      overflow: hidden;
+      background:
+        conic-gradient(
+          #1f8d3f 0deg 9.729deg,
+          #ba2323 9.729deg 19.459deg,
+          #111 19.459deg 29.189deg,
+          #ba2323 29.189deg 38.918deg,
+          #111 38.918deg 48.648deg,
+          #ba2323 48.648deg 58.378deg,
+          #111 58.378deg 68.108deg,
+          #ba2323 68.108deg 77.837deg,
+          #111 77.837deg 87.567deg,
+          #ba2323 87.567deg 97.297deg,
+          #111 97.297deg 107.027deg,
+          #ba2323 107.027deg 116.756deg,
+          #111 116.756deg 126.486deg,
+          #ba2323 126.486deg 136.216deg,
+          #111 136.216deg 145.946deg,
+          #ba2323 145.946deg 155.675deg,
+          #111 155.675deg 165.405deg,
+          #ba2323 165.405deg 175.135deg,
+          #111 175.135deg 184.865deg,
+          #ba2323 184.865deg 194.594deg,
+          #111 194.594deg 204.324deg,
+          #ba2323 204.324deg 214.054deg,
+          #111 214.054deg 223.784deg,
+          #ba2323 223.784deg 233.513deg,
+          #111 233.513deg 243.243deg,
+          #ba2323 243.243deg 252.973deg,
+          #111 252.973deg 262.703deg,
+          #ba2323 262.703deg 272.432deg,
+          #111 272.432deg 282.162deg,
+          #ba2323 282.162deg 291.892deg,
+          #111 291.892deg 301.622deg,
+          #ba2323 301.622deg 311.351deg,
+          #111 311.351deg 321.081deg,
+          #ba2323 321.081deg 330.811deg,
+          #111 330.811deg 340.541deg,
+          #ba2323 340.541deg 350.27deg,
+          #111 350.27deg 360deg
+        );
+    }
+    .wheel::after {
+      content: "";
+      position: absolute; inset: 34%; border-radius: 50%;
+      background: radial-gradient(circle, #2a2a2a, #101010);
+      border: 2px solid #966f2a;
+    }
+
+    .numbers-layer { position: absolute; inset: 0; }
+    .num {
+      position: absolute; left: 50%; top: 50%;
+      transform-origin: 0 0;
+      color: #ffe6b0; font-size: 10px; font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,.8);
+      pointer-events: none;
+    }
+
+    .ball {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(255,255,255,.95);
+      z-index: 5;
+    }
+    .pointer {
+      width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
+      border-top: 24px solid #f8d483; margin: 0 auto 8px; filter: drop-shadow(0 2px 1px rgba(0,0,0,.45));
+    }
+
+    .slot { min-height: 120px; background: #0f0b19; border: 1px dashed #8f6a2d; border-radius: 12px; padding: 12px; }
+    .reveal-card img { width: 100%; max-height: 280px; object-fit: cover; border-radius: 12px; }
+    #winner-stickers { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+    #winner-stickers img { position: absolute; width: 68px; opacity: .85; animation: drift 6s ease-in-out infinite; }
+    @keyframes drift { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-16px) } }
   </style>
 </head>
 <body>
@@ -31,7 +113,12 @@
     <div class="row g-4 align-items-center">
       <div class="col-12 col-md-6 text-center">
         <div class="pointer"></div>
-        <div class="wheel" id="wheel"><div class="ball" id="ball"></div></div>
+        <div class="roulette" id="roulette">
+          <div class="outer-ring"></div>
+          <div class="track-ring"></div>
+          <div class="wheel" id="wheel"><div class="numbers-layer" id="numbersLayer"></div></div>
+          <div class="ball" id="ball"></div>
+        </div>
         <div class="mt-3">
           <div class="badge text-bg-dark border border-warning-subtle">Nächster Platz: <span id="nextPlace">5</span></div>
         </div>
@@ -79,16 +166,62 @@
 <script>
 const top5 = {{ top_images_json|tojson }};
 let step = 5;
-let idx = 4; // top5[4] = Platz 5 ... top5[0] = Platz 1
+let idx = 4;
 let spinning = false;
+let wheelAngle = 0;
 const wheel = document.getElementById('wheel');
+const ball = document.getElementById('ball');
+const numbersLayer = document.getElementById('numbersLayer');
 const btn = document.getElementById('spinBtn');
 const nextPlace = document.getElementById('nextPlace');
 const revealList = document.getElementById('revealList');
 const top10Section = document.getElementById('top10Section');
 const winnerModal = new bootstrap.Modal(document.getElementById('winnerModal'));
 
-function appendReveal(place, item){
+function buildNumbers() {
+  const total = 37; // 0..36
+  const radius = 118;
+  for (let n = 0; n <= 36; n++) {
+    const angle = (n / total) * 360;
+    const el = document.createElement('div');
+    el.className = 'num';
+    el.textContent = String(n);
+    el.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(90deg)`;
+    numbersLayer.appendChild(el);
+  }
+}
+
+function setBallPolar(angleDeg, radiusPx) {
+  const rad = angleDeg * Math.PI / 180;
+  const x = Math.cos(rad) * radiusPx;
+  const y = Math.sin(rad) * radiusPx;
+  ball.style.left = `calc(50% + ${x}px)`;
+  ball.style.top = `calc(50% + ${y}px)`;
+}
+
+function animateBallToNumber(targetNumber, durationMs) {
+  return new Promise(resolve => {
+    const start = performance.now();
+    const laps = 6; // mehrere Umrundungen
+    const totalSegments = 37;
+    const targetAngle = (targetNumber / totalSegments) * 360 - 90;
+    const startRadius = 145; // grauer Bereich außen
+    const endRadius = 112;   // näher an innere Felder
+
+    function frame(now) {
+      const t = Math.min(1, (now - start) / durationMs);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const angle = -90 + (laps * 360 * ease) + (targetAngle * ease);
+      const radius = startRadius + (endRadius - startRadius) * ease;
+      setBallPolar(angle, radius);
+      if (t < 1) requestAnimationFrame(frame);
+      else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function appendReveal(place, item) {
   if (!item) return;
   if (revealList.querySelector('.text-muted')) revealList.innerHTML = '';
   const el = document.createElement('div');
@@ -97,60 +230,65 @@ function appendReveal(place, item){
   revealList.appendChild(el);
 }
 
-btn.addEventListener('click', () => {
+buildNumbers();
+setBallPolar(-90, 145);
+
+btn.addEventListener('click', async () => {
   if (spinning || step < 1) return;
   if (!top5.length || idx < 0 || !top5[idx]) {
     btn.disabled = true;
     btn.textContent = 'Keine ausreichenden Daten';
     return;
   }
+
   spinning = true;
   btn.disabled = true;
 
-  const extra = Math.floor(Math.random() * 360);
-  const base = 1400 + (6 - step) * 180;
-  wheel.style.transform = `rotate(${base + extra}deg)`;
+  const targetNumber = step; // 5,4,3,2,1
+  wheelAngle += 1800 + Math.floor(Math.random() * 240);
+  wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  setTimeout(() => {
-    const item = top5[idx];
-    appendReveal(step, item);
+  await animateBallToNumber(targetNumber, 3800);
 
-    document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
-    document.getElementById('winnerBody').innerHTML = `
-      <img src="/media/{{ year }}/${item.filename}" alt="winner">
-      <div class="mt-2"><strong>${item.uploader || 'Anonymous'}</strong></div>
-      <div class="small text-warning">Chips: ${item.vote_points || 0} · Stimmen: ${item.vote_count || 0}</div>
-      <div class="small">${item.description || ''}</div>`;
-    winnerModal.show();
+  const item = top5[idx];
+  appendReveal(step, item);
 
-    idx -= 1;
-    step -= 1;
-    nextPlace.textContent = step >= 1 ? String(step) : 'Fertig';
+  document.getElementById('winnerTitle').textContent = `🎉 Platz ${step} (Feld ${targetNumber})`;
+  document.getElementById('winnerBody').innerHTML = `
+    <img src="/media/{{ year }}/${item.filename}" alt="winner">
+    <div class="mt-2"><strong>${item.uploader || 'Anonymous'}</strong></div>
+    <div class="small text-warning">Chips: ${item.vote_points || 0} · Stimmen: ${item.vote_count || 0}</div>
+    <div class="small">${item.description || ''}</div>`;
+  winnerModal.show();
 
-    spinning = false;
-    if (step < 1) {
-      btn.disabled = true;
-      btn.textContent = 'Finale abgeschlossen';
-      top10Section.classList.remove('d-none');
-    } else {
-      btn.disabled = false;
-    }
-  }, 3000);
+  idx -= 1;
+  step -= 1;
+  nextPlace.textContent = step >= 1 ? String(step) : 'Fertig';
+
+  spinning = false;
+  if (step < 1) {
+    btn.disabled = true;
+    btn.textContent = 'Finale abgeschlossen';
+    top10Section.classList.remove('d-none');
+  } else {
+    btn.disabled = false;
+    setBallPolar(-90, 145);
+  }
 });
 
-fetch('/api/stickers/{{ year }}').then(r=>r.json()).then(stickers=>{
+fetch('/api/stickers/{{ year }}').then(r => r.json()).then(stickers => {
   if (!stickers || !stickers.length) return;
-  const layer=document.getElementById('winner-stickers');
-  const total=Math.min(14, stickers.length);
-  for(let i=0;i<total;i++){
-    const img=document.createElement('img');
-    img.src=`/sticker/{{ year }}/${stickers[Math.floor(Math.random()*stickers.length)]}`;
-    img.style.left=`${Math.random()*95}%`;
-    img.style.top=`${Math.random()*92}%`;
-    img.style.animationDelay=`${Math.random()*4}s`;
+  const layer = document.getElementById('winner-stickers');
+  const total = Math.min(14, stickers.length);
+  for (let i = 0; i < total; i++) {
+    const img = document.createElement('img');
+    img.src = `/sticker/{{ year }}/${stickers[Math.floor(Math.random() * stickers.length)]}`;
+    img.style.left = `${Math.random() * 95}%`;
+    img.style.top = `${Math.random() * 92}%`;
+    img.style.animationDelay = `${Math.random() * 4}s`;
     layer.appendChild(img);
   }
-}).catch(()=>{});
+}).catch(() => {});
 </script>
 </body>
 </html>
