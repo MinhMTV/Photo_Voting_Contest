@@ -117,7 +117,7 @@
   <p class="text-center text-warning-emphasis mb-4">Reihenfolge: <strong>5 â†’ 4 â†’ 3 â†’ 2 â†’ 1</strong>. DrÃ¼cke jedes Mal auf <strong>â€žKugel setzenâ€œ</strong>.</p>
 
   <div class="roulette-wrap">
-    <div class="row g-4 align-items-center">
+    <div class="row g-3 align-items-start">
       <div class="col-12 col-lg-7 text-center">
         <div class="pointer"></div>
         <div class="roulette" id="roulette">
@@ -131,8 +131,8 @@
         </div>
         <button id="spinBtn" class="btn btn-warning mt-3">Kugel setzen</button>
       </div>
-      <div class="col-12 col-lg-5">
-        <div class="slot mb-3" id="numberLegend">
+      <div class="col-12 col-lg-5 d-flex flex-column justify-content-start">
+        <div class="slot mb-2" id="numberLegend">
           <div class="fw-semibold mb-2">🎯 Zahlen-Legende</div>
           <div class="legend-list" id="legendList"></div>
         </div>
@@ -286,7 +286,7 @@ function buildThumbs() {
     thumbsLayer.appendChild(img);
 
     const n = participantNumberById.get(Number(p.id)) || 0;
-    const nr = thumbRadius + (fieldH * 0.45);
+    const nr = thumbRadius - (fieldH * 0.72);
     const nx = c + (Math.cos(rad) * nr);
     const ny = c + (Math.sin(rad) * nr);
     const numEl = document.createElement('div');
