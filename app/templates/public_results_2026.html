@@ -202,7 +202,7 @@ function angleForNumber(n) {
 function buildNumbers() {
   const radius = 118;
   rouletteOrder.forEach((n) => {
-    const angle = angleForNumber(n) + 90;
+    const angle = angleForNumber(n);
     const el = document.createElement('div');
     el.className = 'num';
     el.textContent = String(n);
@@ -219,18 +219,24 @@ function setBallPolar(angleDeg, radiusPx) {
   ball.style.top = `calc(50% + ${y}px)`;
 }
 
-function animateBallToNumber(targetNumber, durationMs) {
+function normalizeDeg(d) {
+  return ((d % 360) + 360) % 360;
+}
+
+function animateBallToNumber(targetNumber, wheelAngleDeg, durationMs) {
   return new Promise(resolve => {
     const start = performance.now();
     const laps = 6;
-    const targetAngle = angleForNumber(targetNumber);
+    const baseTarget = angleForNumber(targetNumber);
+    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
+    const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
     const startRadius = 145;
     const endRadius = 112;
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
       const ease = 1 - Math.pow(1 - t, 3);
-      const angle = -90 + (laps * 360 * ease) + ((targetAngle + 90) * ease);
+      const angle = -90 + (laps * 360 + (targetAngle + 90)) * ease;
       const radius = startRadius + (endRadius - startRadius) * ease;
       setBallPolar(angle, radius);
       if (t < 1) requestAnimationFrame(frame);
@@ -271,7 +277,7 @@ btn.addEventListener('click', async () => {
   wheelAngle += 1800 + Math.floor(Math.random() * 240);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
 
-  await animateBallToNumber(targetNumber, 3800);
+  await animateBallToNumber(targetNumber, wheelAngle, 3800);
 
   const item = top5[idx];
   appendReveal(step, item);
