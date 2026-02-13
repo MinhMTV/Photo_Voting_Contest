@@ -178,17 +178,36 @@ const revealList = document.getElementById('revealList');
 const top10Section = document.getElementById('top10Section');
 const winnerModal = new bootstrap.Modal(document.getElementById('winnerModal'));
 
+const rouletteOrder = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const redNumbers = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+
+function colorForNumber(n) {
+  if (n === 0) return '#1f8d3f';
+  return redNumbers.has(n) ? '#ba2323' : '#111';
+}
+
+function applyWheelColors() {
+  const seg = 360 / rouletteOrder.length;
+  const parts = rouletteOrder.map((n, i) => `${colorForNumber(n)} ${(i * seg).toFixed(3)}deg ${((i + 1) * seg).toFixed(3)}deg`);
+  wheel.style.background = `conic-gradient(${parts.join(',')})`;
+}
+
+function angleForNumber(n) {
+  const idx = rouletteOrder.indexOf(Number(n));
+  const seg = 360 / rouletteOrder.length;
+  return (idx * seg) - 90;
+}
+
 function buildNumbers() {
-  const total = 37; // 0..36
   const radius = 118;
-  for (let n = 0; n <= 36; n++) {
-    const angle = (n / total) * 360;
+  rouletteOrder.forEach((n) => {
+    const angle = angleForNumber(n) + 90;
     const el = document.createElement('div');
     el.className = 'num';
     el.textContent = String(n);
     el.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(90deg)`;
     numbersLayer.appendChild(el);
-  }
+  });
 }
 
 function setBallPolar(angleDeg, radiusPx) {
@@ -202,20 +221,22 @@ function setBallPolar(angleDeg, radiusPx) {
 function animateBallToNumber(targetNumber, durationMs) {
   return new Promise(resolve => {
     const start = performance.now();
-    const laps = 6; // mehrere Umrundungen
-    const totalSegments = 37;
-    const targetAngle = (targetNumber / totalSegments) * 360 - 90;
-    const startRadius = 145; // grauer Bereich außen
-    const endRadius = 112;   // näher an innere Felder
+    const laps = 6;
+    const targetAngle = angleForNumber(targetNumber);
+    const startRadius = 145;
+    const endRadius = 112;
 
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
       const ease = 1 - Math.pow(1 - t, 3);
-      const angle = -90 + (laps * 360 * ease) + (targetAngle * ease);
+      const angle = -90 + (laps * 360 * ease) + ((targetAngle + 90) * ease);
       const radius = startRadius + (endRadius - startRadius) * ease;
       setBallPolar(angle, radius);
       if (t < 1) requestAnimationFrame(frame);
-      else resolve();
+      else {
+        setBallPolar(targetAngle, endRadius);
+        resolve();
+      }
     }
     requestAnimationFrame(frame);
   });
@@ -230,6 +251,7 @@ function appendReveal(place, item) {
   revealList.appendChild(el);
 }
 
+applyWheelColors();
 buildNumbers();
 setBallPolar(-90, 145);
 
