@@ -633,12 +633,17 @@ def update_images():
         return redirect(url_for('main.login'))
 
     db = get_db()
+    year = int(request.form.get('contest_year', current_year()))
 
-    images = db.execute('SELECT id FROM images').fetchall()
+    images = db.execute(
+        'SELECT id FROM images WHERE contest_year = ?',
+        (year,)
+    ).fetchall()
+
     for image in images:
         image_id = image['id']
-        uploader = request.form.get(f'uploader_{image_id}', '')
-        description = request.form.get(f'description_{image_id}', '')
+        uploader = (request.form.get(f'uploader_{image_id}', '') or '').strip()
+        description = (request.form.get(f'description_{image_id}', '') or '').strip()
         visible = 1 if request.form.get(f'visible_{image_id}') else 0
 
         db.execute(
@@ -647,7 +652,7 @@ def update_images():
         )
 
     db.commit()
-    return redirect(url_for('main.upload'))
+    return redirect(url_for('main.upload', year=year))
 
 
 @bp.route('/delete-image/<int:image_id>', methods=['POST'])
