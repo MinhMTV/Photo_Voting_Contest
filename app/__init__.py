@@ -32,6 +32,11 @@ def create_app():
         db.init_db()
         db.migrate_uploads_to_year_dirs(default_legacy_year=2025)
         db.migrate_null_years(default_legacy_year=2025)
+        conn = db.get_db()
+        conn.execute(
+            "UPDATE images SET visible = 1 WHERE contest_year = 2025"
+        )
+        conn.commit()
 
     # Routen registrieren
     from . import routes
