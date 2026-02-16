@@ -8,3 +8,4 @@ app/published_flag.txt
 
 # Local uploaded media (generated/test data)
 app/static/uploads_*/
+app/published_flag_*.txt

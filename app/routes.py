@@ -33,7 +33,9 @@ def get_runtime_settings() -> dict:
         'voting_end_at': current_app.config.get('VOTING_END_AT', '2026-12-31T23:59:59'),
         'waiting_text_by_year': {
             str(base_year): 'Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht.'
-        }
+        },
+        # ✅ NEU: Testmodus (default aus)
+        'block_public_unpublished_all_years': False,
     }
     path = _settings_path()
     if not os.path.exists(path):
@@ -527,6 +529,7 @@ def admin_settings():
         selected_year = int(request.form.get('current_contest_year', settings.get('current_contest_year', 2026)))
         voting_end_at = request.form.get('voting_end_at', settings.get('voting_end_at'))
         legacy_raw = request.form.get('legacy_years', '')
+        block_all = bool(request.form.get('block_public_unpublished_all_years'))
 
         legacy_years = []
         for token in legacy_raw.split(','):
@@ -551,7 +554,8 @@ def admin_settings():
             'current_contest_year': selected_year,
             'legacy_years': sorted(set(legacy_years), reverse=True),
             'voting_end_at': voting_end_at,
-            'waiting_text_by_year': waiting_text_by_year
+            'waiting_text_by_year': waiting_text_by_year,
+            'block_public_unpublished_all_years': block_all
         }
         save_runtime_settings(new_settings)
 
@@ -762,12 +766,19 @@ def public_results():
 
 @bp.route('/public-results/<int:year>')
 def public_results_year(year: int):
-    # Hide current year's public results until admin publishes them
-    flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
-    published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
     settings = get_runtime_settings()
-    if year == current_year() and not published:
-        return render_template(waiting_template_for_year(year), year=year, waiting_text=waiting_text_for_year(year, settings))
+
+    published = is_published(year)
+
+    # ✅ Optionaler Testmodus: alle Jahre blocken, wenn nicht published
+    block_all = bool(settings.get('block_public_unpublished_all_years', False))
+
+    if (block_all and not published) or (year == current_year() and not published):
+        return render_template(
+            waiting_template_for_year(year),
+            year=year,
+            waiting_text=waiting_text_for_year(year, settings)
+        )
 
     db = get_db()
 
