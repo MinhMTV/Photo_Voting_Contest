@@ -22,6 +22,15 @@
 <body>
 
 <div class="container">
+    <div class="d-flex gap-2 align-items-center mb-3">
+    {% for y in available_years %}
+        <a class="btn btn-outline-primary btn-sm {% if y == year %}active{% endif %}"
+        href="{{ url_for('main.results', year=y) }}">
+        {{ y }}
+        </a>
+    {% endfor %}
+    </div>
+
     <h1 class="mb-4">📊 Aktuelles Ranking</h1>
     <p><strong>👥 Wähler:innen:</strong> {{ voters }} | <strong>🗳️ Gesamtstimmen:</strong> {{ total_votes }}</p>
 
@@ -61,7 +70,7 @@
             <form method="POST" action="{{ url_for('main.reset_year_votes_admin') }}" class="d-flex gap-2 align-items-center" onsubmit="return confirm('Wirklich alle Stimmen/Chips für dieses Jahr löschen?');">
                 <select name="year" class="form-select form-select-sm" style="min-width: 120px;">
                     {% for y in available_years %}
-                    <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
                 </select>
                 <button type="submit" class="btn btn-outline-danger btn-sm">Reset Jahr</button>

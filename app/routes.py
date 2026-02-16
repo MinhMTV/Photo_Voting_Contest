@@ -671,11 +671,12 @@ def delete_image(image_id):
 
 @bp.route('/results')
 def results():
-    # Legacy admin results page preserved
     if not session.get('admin'):
         return redirect(url_for('main.login'))
 
+    year = int(request.args.get('year', current_year()))
     db = get_db()
+
     top_images = db.execute('''
         SELECT
             images.id,
@@ -695,30 +696,30 @@ def results():
              + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
              + SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) * 1) as weighted_score
         FROM images
-        LEFT JOIN votes ON images.id = votes.image_id
-        LEFT JOIN reactions ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
-        WHERE votes.id IS NOT NULL OR reactions.id IS NOT NULL
+        LEFT JOIN votes
+          ON images.id = votes.image_id AND votes.contest_year = images.contest_year
+        LEFT JOIN reactions
+          ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
+        WHERE images.contest_year = ?
+          AND (votes.id IS NOT NULL OR reactions.id IS NOT NULL)
         GROUP BY images.id
         ORDER BY weighted_score DESC, vote_count DESC
-    ''').fetchall()
+    ''', (year,)).fetchall()
 
-    total_votes = db.execute('SELECT COUNT(*) FROM votes WHERE id IS NOT NULL').fetchone()[0]
-    voters = db.execute('SELECT COUNT(DISTINCT voter_session_id) FROM votes').fetchone()[0]
+    total_votes = db.execute(
+        'SELECT COUNT(*) FROM votes WHERE contest_year = ?',
+        (year,)
+    ).fetchone()[0]
+    voters = db.execute(
+        'SELECT COUNT(DISTINCT voter_session_id) FROM votes WHERE contest_year = ?',
+        (year,)
+    ).fetchone()[0]
 
     settings = get_runtime_settings()
-    available_years = {int(settings.get('current_contest_year', current_year()))}
-    for y in (settings.get('legacy_years', []) or []):
-        try:
-            available_years.add(int(y))
-        except Exception:
-            pass
-    db_years = db.execute('SELECT DISTINCT contest_year FROM images UNION SELECT DISTINCT contest_year FROM votes UNION SELECT DISTINCT contest_year FROM duel_votes').fetchall()
-    for row in db_years:
-        try:
-            if row[0] is not None:
-                available_years.add(int(row[0]))
-        except Exception:
-            pass
+    available_years = sorted(
+        set([current_year(), *[int(y) for y in (settings.get('legacy_years') or [])]]),
+        reverse=True
+    )
 
     flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
     published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
@@ -731,8 +732,10 @@ def results():
         published=published,
         show_stats=True,
         current_year=current_year(),
-        available_years=sorted(available_years)
+        year=year,
+        available_years=available_years
     )
+
 
 
 @bp.route('/public-results')
