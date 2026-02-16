@@ -104,6 +104,25 @@ def migrate_uploads_to_year_dirs(default_legacy_year: int = 2025):
         if os.path.exists(src) and not os.path.exists(dst):
             shutil.move(src, dst)
 
+def migrate_null_years(default_legacy_year: int = 2025) -> None:
+    db = get_db()
+
+    # Nur laufen lassen, wenn überhaupt NULLs existieren
+    null_images = db.execute('SELECT COUNT(*) FROM images WHERE contest_year IS NULL').fetchone()[0]
+    null_votes = db.execute('SELECT COUNT(*) FROM votes WHERE contest_year IS NULL').fetchone()[0]
+    null_reactions = db.execute('SELECT COUNT(*) FROM reactions WHERE contest_year IS NULL').fetchone()[0]
+    null_duel = db.execute('SELECT COUNT(*) FROM duel_votes WHERE contest_year IS NULL').fetchone()[0]
+
+    if (null_images + null_votes + null_reactions + null_duel) == 0:
+        return
+
+    db.execute('UPDATE images SET contest_year = ? WHERE contest_year IS NULL', (default_legacy_year,))
+    db.execute('UPDATE votes SET contest_year = ? WHERE contest_year IS NULL', (default_legacy_year,))
+    db.execute('UPDATE reactions SET contest_year = ? WHERE contest_year IS NULL', (default_legacy_year,))
+    db.execute('UPDATE duel_votes SET contest_year = ? WHERE contest_year IS NULL', (default_legacy_year,))
+    db.commit()
+
+
 @click.command('init-db')
 @with_appcontext
 def init_db_command():

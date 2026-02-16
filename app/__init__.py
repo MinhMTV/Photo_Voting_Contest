@@ -31,6 +31,7 @@ def create_app():
     with app.app_context():
         db.init_db()
         db.migrate_uploads_to_year_dirs(default_legacy_year=2025)
+        db.migrate_null_years
 
     # Routen registrieren
     from . import routes
