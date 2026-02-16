@@ -57,6 +57,17 @@ def save_runtime_settings(data: dict) -> None:
 def current_year() -> int:
     return int(get_runtime_settings().get('current_contest_year', 2026))
 
+def _publish_flag_path(year: int) -> str:
+    return os.path.join(current_app.root_path, f'published_flag_{year}.txt')
+
+def is_published(year: int) -> bool:
+    path = _publish_flag_path(year)
+    return os.path.exists(path) and open(path).read().strip() == '1'
+
+def set_published(year: int, value: bool) -> None:
+    path = _publish_flag_path(year)
+    with open(path, 'w') as f:
+        f.write('1' if value else '0')
 
 def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
     cfg = settings or get_runtime_settings()
@@ -726,8 +737,8 @@ def results():
         reverse=True
     )
 
-    flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
-    published = os.path.exists(flag_path) and open(flag_path).read().strip() == '1'
+    published = is_published(year)
+
 
     return render_template(
         'results.html',
@@ -827,13 +838,12 @@ def toggle_publish():
     if not session.get('admin'):
         return redirect(url_for('main.login'))
 
+    year = int(request.form.get('year', current_year()))
     action = request.form.get('action')
-    flag_path = os.path.join(current_app.root_path, 'published_flag.txt')
 
-    with open(flag_path, 'w') as f:
-        f.write('1' if action == 'show' else '0')
+    set_published(year, action == 'show')
+    return redirect(url_for('main.results', year=year))
 
-    return redirect(url_for('main.results'))
 
 
 @bp.route('/admin/reset-year-votes', methods=['POST'])

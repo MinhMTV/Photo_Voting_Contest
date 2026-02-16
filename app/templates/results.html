@@ -57,12 +57,14 @@
         🌍 Öffentliches Ranking
         </a>
         <form method="POST" action="{{ url_for('main.toggle_publish') }}">
-            {% if published %}
-                <button type="submit" name="action" value="hide" class="btn btn-warning">🔒 Veröffentlichung zurücknehmen</button>
-            {% else %}
-                <button type="submit" name="action" value="show" class="btn btn-success">🚀 Ergebnisse veröffentlichen</button>
-            {% endif %}
-        </form>
+        <input type="hidden" name="year" value="{{ year }}">
+        {% if published %}
+            <button type="submit" name="action" value="hide" class="btn btn-warning">🔒 Veröffentlichung zurücknehmen</button>
+        {% else %}
+            <button type="submit" name="action" value="show" class="btn btn-success">🚀 Ergebnisse veröffentlichen</button>
+        {% endif %}
+    </form>
+
     </div>
 
     <div class="card mt-3 border-danger-subtle">
