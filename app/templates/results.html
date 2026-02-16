@@ -51,7 +51,11 @@
 
     <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
         <a href="{{ url_for('main.upload') }}" class="btn btn-secondary">🔙 Zurück zum Adminbereich</a>
-        <a href="{{ url_for('main.public_results') }}" target="_blank" class="btn btn-outline-primary ms-2">🌍 Öffentliches Ranking</a>
+        <a href="{{ url_for('main.public_results_year', year=year) }}"
+        target="_blank"
+        class="btn btn-outline-primary ms-2">
+        🌍 Öffentliches Ranking
+        </a>
         <form method="POST" action="{{ url_for('main.toggle_publish') }}">
             {% if published %}
                 <button type="submit" name="action" value="hide" class="btn btn-warning">🔒 Veröffentlichung zurücknehmen</button>
