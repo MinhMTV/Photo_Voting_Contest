@@ -30,14 +30,25 @@
         </div>
     </div>
 
+        <div class="d-flex gap-2 align-items-center mb-3">
+            {% for y in available_years %}
+                <a class="btn btn-outline-light btn-sm {% if y == year %}active{% endif %}"
+                href="{{ url_for('main.upload', year=y) }}">
+                {{ y }}
+                </a>
+            {% endfor %}
+            </div>
+
+
+
     <div class="panel p-3 mb-3">
         <form method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
-            <input type="hidden" name="contest_year" value="{{ current_year }}">
+            <input type="hidden" name="contest_year" value="{{ year }}">
             <div class="col-md-9">
                 <input type="file" class="form-control" id="files" name="files" multiple accept="image/*" required>
             </div>
             <div class="col-md-3 d-grid">
-                <button type="submit" class="btn btn-primary">Bilder hochladen ({{ current_year }})</button>
+                <button type="submit" class="btn btn-primary">Bilder hochladen ({{ year }})</button>
             </div>
         </form>
     </div>
@@ -45,7 +56,7 @@
     <form method="POST" action="{{ url_for('main.update_images') }}" class="panel">
         {% for image in images %}
         <div class="image-row">
-            <img src="{{ url_for('main.media_year', year=(image.contest_year or current_year), filename=image.filename) }}" alt="Bild {{ loop.index }}">
+            <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" alt="Bild {{ loop.index }}">
 
             <div class="flex-grow-1">
                 <div class="row g-2">

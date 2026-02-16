@@ -467,10 +467,10 @@ def upload():
         return redirect(url_for('main.login'))
 
     db = get_db()
+    year = int(request.args.get('year', request.form.get('contest_year', current_year())))
 
     if request.method == 'POST' and 'files' in request.files:
         files = request.files.getlist('files')
-        year = int(request.form.get('contest_year', current_year()))
 
         target_upload_folder = upload_folder_for_year(year)
         for file in files:
@@ -481,11 +481,28 @@ def upload():
                     'INSERT INTO images (filename, uploaded_at, visible, contest_year) VALUES (?, ?, ?, ?)',
                     (filename, datetime.now().isoformat(), 1, year)
                 )
-                db.commit()
-        return redirect(url_for('main.upload'))
+        db.commit()
+        return redirect(url_for('main.upload', year=year))
 
-    images = db.execute('SELECT * FROM images ORDER BY uploaded_at DESC').fetchall()
-    return render_template('upload.html', images=images, current_year=current_year())
+    images = db.execute(
+        'SELECT * FROM images WHERE contest_year = ? ORDER BY uploaded_at DESC',
+        (year,)
+    ).fetchall()
+
+    settings = get_runtime_settings()
+    available_years = sorted(
+        set([current_year(), *[int(y) for y in (settings.get('legacy_years') or [])]]),
+        reverse=True
+    )
+
+    return render_template(
+        'upload.html',
+        images=images,
+        current_year=current_year(),
+        year=year,
+        available_years=available_years
+    )
+
 
 
 @bp.route('/admin/settings', methods=['GET', 'POST'])
