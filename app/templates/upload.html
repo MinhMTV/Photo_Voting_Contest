@@ -54,6 +54,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('main.update_images') }}" class="panel">
+    <input type="hidden" name="contest_year" value="{{ year }}">
         {% for image in images %}
         <div class="image-row">
             <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" alt="Bild {{ loop.index }}">
