@@ -16,6 +16,31 @@ except ImportError:
 bp = Blueprint('main', __name__)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
+def get_year_settings(year: int) -> dict:
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM contest_year_settings WHERE contest_year = ?",
+        (year,)
+    ).fetchone()
+    if not row:
+        # Fallback, falls Settings noch nicht existieren
+        return {"vote_mode": "toggle", "max_actions": 3, "unit_name": "Stimme", "unit_icon": "❤️"}
+    return dict(row)
+
+def get_vote_options(year: int) -> list[dict]:
+    db = get_db()
+    rows = db.execute("""
+        SELECT id, opt_key, label, icon, value, unique_per_user, exclusive_group, is_special, active, sort_order
+        FROM vote_options
+        WHERE contest_year = ? AND active = 1
+        ORDER BY sort_order ASC, id ASC
+    """, (year,)).fetchall()
+    return [dict(r) for r in rows]
+
+def get_vote_option_map(year: int) -> dict:
+    opts = get_vote_options(year)
+    return {o["opt_key"]: o for o in opts}
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -64,12 +89,11 @@ def _publish_flag_path(year: int) -> str:
 
 def is_published(year: int) -> bool:
     path = _publish_flag_path(year)
-    return os.path.exists(path) and open(path).read().strip() == '1'
+    if not os.path.exists(path):
+        return False
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read().strip() == '1'
 
-def set_published(year: int, value: bool) -> None:
-    path = _publish_flag_path(year)
-    with open(path, 'w') as f:
-        f.write('1' if value else '0')
 
 def waiting_text_for_year(year: int, settings: dict | None = None) -> str:
     cfg = settings or get_runtime_settings()
@@ -168,15 +192,33 @@ def contest_year(year: int):
     ).fetchall()
 
     voter_session_id = request.cookies.get('voter_session_id')
+    year_cfg = get_year_settings(year)
+    max_actions = int(year_cfg.get("max_actions", 4))
+
     voted = db.execute(
-        'SELECT image_id, chip_value, chip_label FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+        'SELECT image_id, vote_value, vote_label, vote_option_key FROM votes WHERE voter_session_id = ? AND contest_year = ?',
         (voter_session_id, year)
     ).fetchall()
+
     voted_ids = [row['image_id'] for row in voted]
-    user_bets = {str(row['image_id']): {'chip_value': row['chip_value'] or 1, 'chip_label': row['chip_label'] or 'vote'} for row in voted}
-    used_labels = {(row['chip_label'] or '').lower() for row in voted}
-    used_count = 4 if ('all-in' in used_labels or 'allin' in used_labels) else len(used_labels)
-    votes_left = max(0, 4 - used_count)
+    user_bets = {
+        str(row['image_id']): {
+            'vote_value': row['vote_value'] or 1,
+            'vote_label': row['vote_label'] or '',
+            'vote_option_key': row['vote_option_key'] or ''
+        } for row in voted
+    }
+
+    used_keys = {(row['vote_option_key'] or '').lower() for row in voted}
+    vote_mode = (year_cfg.get("vote_mode") or "toggle").strip()
+
+    if vote_mode == "unique_options":
+        used_count = max_actions if ('all_in' in used_keys) else len(used_keys)
+    else:
+        used_count = len(voted)
+
+    votes_left = max(0, max_actions - used_count)
+
 
     user_reactions = {}
     if voter_session_id:
@@ -252,6 +294,7 @@ def duel_state(year: int):
     return jsonify(success=True, used=used, remaining=max(0, 10 - used))
 
 
+
 @bp.route('/api/duel-spin/<int:year>')
 def duel_spin(year: int):
     voter_session_id = (request.args.get('voter_session_id') or '').strip()
@@ -302,82 +345,115 @@ def duel_vote(image_id: int):
 
 
 @bp.route('/vote/<int:image_id>', methods=['POST'])
-def vote(image_id):
+def vote(image_id: int):
     payload = request.json or {}
-    voter_session_id = payload.get('voter_session_id')
+    voter_session_id = (payload.get('voter_session_id') or '').strip()
     contest_year = int(payload.get('contest_year', current_year()))
-    chip_label = (payload.get('chip_label') or '5').strip().lower()
 
-    chip_map = {
-        '5': 5,
-        '25': 25,
-        '50': 50,
-        '100': 100,
-        'all-in': 180,
-        'allin': 180
-    }
-    chip_value = chip_map.get(chip_label, 5)
-    if chip_label not in chip_map:
-        chip_label = str(chip_value)
+    # Frontend soll künftig vote_option_key schicken (z.B. "chip_25", "all_in", "heart")
+    vote_option_key = (payload.get('vote_option_key') or '').strip()
+
+    if not vote_option_key:
+        chip_label = (payload.get('chip_label') or '').strip().lower()
+        chip_map = {
+            '5': 'chip_5',
+            '25': 'chip_25',
+            '50': 'chip_50',
+            '100': 'chip_100',
+            'all-in': 'all_in',
+            'allin': 'all_in',
+            'vote': 'heart',
+            'heart': 'heart',
+        }
+        vote_option_key = chip_map.get(chip_label, '')
+
+
+    if not voter_session_id:
+        return jsonify(success=False, error='Session fehlt'), 400
+    if not vote_option_key:
+        return jsonify(success=False, error='vote_option_key fehlt'), 400
 
     db = get_db()
 
+    year_cfg = get_year_settings(contest_year)
+    max_actions = int(year_cfg.get("max_actions", 4))
+
+    opt_map = get_vote_option_map(contest_year)
+    opt = opt_map.get(vote_option_key)
+    if not opt:
+        return jsonify(success=False, error='Ungültige Vote-Option'), 400
+
+    vote_value = int(opt.get("value") or 1)
+    vote_label = str(opt.get("label") or vote_option_key)
+    unique_per_user = int(opt.get("unique_per_user") or 0)
+    exclusive_group = (opt.get("exclusive_group") or '').strip().lower()
+
+    # 1) Prüfen ob User schon auf dieses Bild gevotet hat (pro Bild nur 1 Vote)
     vote_exists = db.execute(
-        'SELECT id, chip_value FROM votes WHERE image_id = ? AND voter_session_id = ? AND contest_year = ?',
+        'SELECT id, vote_option_key, vote_value FROM votes WHERE image_id = ? AND voter_session_id = ? AND contest_year = ?',
         (image_id, voter_session_id, contest_year)
     ).fetchone()
 
-    # each chip can be used only once per user/year
-    chip_in_use = db.execute(
-        'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND chip_label = ?',
-        (voter_session_id, contest_year, chip_label)
-    ).fetchone()
+    # 2) All-in / Exklusivlogik: "all_in" blockt alles andere (wie bisher)
     all_in_vote = db.execute(
-        'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND chip_label IN ("all-in", "allin")',
-        (voter_session_id, contest_year)
+        'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND vote_option_key = ?',
+        (voter_session_id, contest_year, 'all_in')
     ).fetchone()
 
+    # 3) Pro User/Jahr Option nur einmal (falls unique_per_user)
+    opt_in_use = None
+    if unique_per_user:
+        opt_in_use = db.execute(
+            'SELECT id, image_id FROM votes WHERE voter_session_id = ? AND contest_year = ? AND vote_option_key = ?',
+            (voter_session_id, contest_year, vote_option_key)
+        ).fetchone()
+
+    # Toggle-Behaviour (gleiches Bild + gleiche Option => entfernen)
     if vote_exists:
-        # Same chip on same image => remove vote
-        if int(vote_exists['chip_value'] or 0) == chip_value:
-            db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
-        else:
-            # Two-step replace behavior on same image: first click removes old chip only.
+        if (vote_exists['vote_option_key'] or '') == vote_option_key:
             db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
             db.commit()
+        else:
+            # "Replace" auf demselben Bild: erst löschen und Client bekommt removed_only=True
+            db.execute('DELETE FROM votes WHERE id = ?', (vote_exists['id'],))
+            db.commit()
+
             updated_vote_count = db.execute(
                 'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
                 (voter_session_id, contest_year)
             ).fetchone()[0]
             return jsonify(success=True, vote_count=updated_vote_count, removed_only=True)
-    else:
-        if chip_in_use:
-            return jsonify(success=False, error=f'Chip {chip_label.upper()} wurde bereits benutzt'), 403
 
-        if chip_label in ('all-in', 'allin'):
+    else:
+        # Block: Option bereits woanders verwendet?
+        if opt_in_use:
+            return jsonify(success=False, error=f'Option {vote_label} wurde bereits benutzt'), 403
+
+        # Block: all_in Regeln
+        if vote_option_key == 'all_in' or exclusive_group == 'allin':
             other_votes = db.execute(
                 'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
                 (voter_session_id, contest_year)
             ).fetchone()[0]
             if other_votes > 0:
-                return jsonify(success=False, error='All-in geht nur, wenn keine anderen Chips gesetzt sind'), 403
-        elif all_in_vote:
-            return jsonify(success=False, error='All-in ist bereits gesetzt. Erst All-in entfernen.'), 403
+                return jsonify(success=False, error='All-in geht nur, wenn keine anderen Optionen gesetzt sind'), 403
+        else:
+            if all_in_vote:
+                return jsonify(success=False, error='All-in ist bereits gesetzt. Erst All-in entfernen.'), 403
 
+        # Limit pro User/Jahr (max_actions)
         vote_count = db.execute(
             'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
             (voter_session_id, contest_year)
         ).fetchone()[0]
-
-        if vote_count >= 4:
-            return jsonify(success=False, error='Du hast das Chip-Limit (4) erreicht'), 403
+        if vote_count >= max_actions:
+            return jsonify(success=False, error=f'Du hast das Limit ({max_actions}) erreicht'), 403
 
         db.execute(
-            'INSERT INTO votes (image_id, voter_session_id, contest_year, chip_value, chip_label) VALUES (?, ?, ?, ?, ?)',
-            (image_id, voter_session_id, contest_year, chip_value, chip_label)
+            'INSERT INTO votes (image_id, voter_session_id, contest_year, vote_option_key, vote_value, vote_label) VALUES (?, ?, ?, ?, ?, ?)',
+            (image_id, voter_session_id, contest_year, vote_option_key, vote_value, vote_label)
         )
-
-    db.commit()
+        db.commit()
 
     updated_vote_count = db.execute(
         'SELECT COUNT(*) FROM votes WHERE voter_session_id = ? AND contest_year = ?',
@@ -390,21 +466,148 @@ def vote(image_id):
 @bp.route('/api/voter-state/<int:year>')
 def voter_state(year: int):
     voter_session_id = request.args.get('voter_session_id', '').strip()
+
+    year_cfg = get_year_settings(year)
+    max_actions = int(year_cfg.get("max_actions", 4))
+    vote_mode = (year_cfg.get("vote_mode") or "toggle").strip()
+
     if not voter_session_id:
-        return jsonify(voted_ids=[], vote_count=0, votes_left=4, bets=[])
+        return jsonify(voted_ids=[], vote_count=0, votes_left=max_actions, bets=[])
 
     db = get_db()
     voted = db.execute(
-        'SELECT image_id, chip_label FROM votes WHERE voter_session_id = ? AND contest_year = ?',
+        'SELECT image_id, vote_option_key, vote_label, vote_value FROM votes WHERE voter_session_id = ? AND contest_year = ?',
         (voter_session_id, year)
     ).fetchall()
+
     voted_ids = [row['image_id'] for row in voted]
     vote_count = len(voted_ids)
-    bets = [{'image_id': row['image_id'], 'chip_label': (row['chip_label'] or '').lower()} for row in voted]
-    labels = {b['chip_label'] for b in bets}
-    used_count = 4 if ('all-in' in labels or 'allin' in labels) else len(labels)
-    return jsonify(voted_ids=voted_ids, vote_count=vote_count, votes_left=max(0, 4 - used_count), bets=bets)
 
+    bets = [{
+        'image_id': row['image_id'],
+        'vote_option_key': (row['vote_option_key'] or '').lower(),
+        'vote_label': row['vote_label'] or '',
+        'vote_value': row['vote_value'] or 1,
+    } for row in voted]
+
+    used_keys = {(row['vote_option_key'] or '').lower() for row in voted}
+
+    if vote_mode == "unique_options":
+        used_count = max_actions if ('all_in' in used_keys) else len(used_keys)
+    else:
+        used_count = len(voted)
+
+    votes_left = max(0, max_actions - used_count)
+
+    return jsonify(
+        voted_ids=voted_ids,
+        vote_count=vote_count,
+        votes_left=votes_left,
+        bets=bets,
+        vote_mode=vote_mode,
+        max_actions=max_actions
+    )
+
+@bp.route('/admin/vote-options', methods=['GET', 'POST'])
+def admin_vote_options():
+    if not session.get('admin'):
+        return redirect(url_for('main.login'))
+
+    db = get_db()
+    year = int(request.args.get('year', current_year()))
+
+    if request.method == 'POST':
+        action = (request.form.get('action') or '').strip()
+
+        if action == 'save_order':
+            order_csv = request.form.get('order', '')
+            ids = [int(x) for x in order_csv.split(',') if x.strip().isdigit()]
+            for idx, opt_id in enumerate(ids, start=1):
+                db.execute(
+                    'UPDATE vote_options SET sort_order = ? WHERE id = ? AND contest_year = ?',
+                    (idx, opt_id, year)
+                )
+
+            # active toggles
+            rows = db.execute(
+                'SELECT id FROM vote_options WHERE contest_year = ?',
+                (year,)
+            ).fetchall()
+            for r in rows:
+                active_val = 1 if request.form.get(f'active_{r["id"]}') else 0
+                db.execute('UPDATE vote_options SET active = ? WHERE id = ?', (active_val, r['id']))
+
+            db.commit()
+            return redirect(url_for('main.admin_vote_options', year=year))
+
+        elif action == 'upsert':
+            opt_id = int(request.form.get('id', 0) or 0)
+            opt_key = (request.form.get('opt_key') or '').strip()
+            label = (request.form.get('label') or '').strip()
+            icon = (request.form.get('icon') or '').strip()
+            value = int(request.form.get('value') or 1)
+            unique_per_user = 1 if request.form.get('unique_per_user') else 0
+            exclusive_group = (request.form.get('exclusive_group') or '').strip().lower()
+            is_special = 1 if request.form.get('is_special') else 0
+            active = 1 if request.form.get('active') else 0
+
+            if not opt_key or not label:
+                return jsonify(success=False, error='opt_key und label sind Pflicht'), 400
+
+            if opt_id > 0:
+                db.execute("""
+                    UPDATE vote_options
+                    SET opt_key=?, label=?, icon=?, value=?, unique_per_user=?, exclusive_group=?,
+                        is_special=?, active=?
+                    WHERE id=? AND contest_year=?
+                """, (opt_key, label, icon, value, unique_per_user, exclusive_group, is_special, active, opt_id, year))
+            else:
+                # sort_order ans Ende
+                max_sort = db.execute(
+                    'SELECT COALESCE(MAX(sort_order), 0) FROM vote_options WHERE contest_year = ?',
+                    (year,)
+                ).fetchone()[0]
+                db.execute("""
+                    INSERT INTO vote_options
+                      (contest_year, opt_key, label, icon, value, unique_per_user, exclusive_group, is_special, active, sort_order, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (year, opt_key, label, icon, value, unique_per_user, exclusive_group, is_special, active, max_sort + 1, datetime.now().isoformat()))
+
+            db.commit()
+            return redirect(url_for('main.admin_vote_options', year=year))
+
+        elif action == 'delete':
+            opt_id = int(request.form.get('id', 0) or 0)
+            if opt_id > 0:
+                db.execute('DELETE FROM vote_options WHERE id = ? AND contest_year = ?', (opt_id, year))
+                db.commit()
+            return redirect(url_for('main.admin_vote_options', year=year))
+
+    # GET
+    opts = db.execute("""
+        SELECT *
+        FROM vote_options
+        WHERE contest_year = ?
+        ORDER BY sort_order ASC, id ASC
+    """, (year,)).fetchall()
+
+    year_cfg = get_year_settings(year)
+    settings = get_runtime_settings()
+    available_years = sorted(set([current_year(), *[int(y) for y in (settings.get('legacy_years') or [])]]), reverse=True)
+
+    return render_template(
+        'admin_vote_options.html',
+        year=year,
+        available_years=available_years,
+        year_cfg=year_cfg,
+        options=[dict(o) for o in opts],
+        current_year=current_year()
+    )
+
+
+@bp.route('/api/vote-options/<int:year>')
+def api_vote_options(year: int):
+    return jsonify(get_vote_options(year))
 
 @bp.route('/api/reset-votes/<int:year>', methods=['POST'])
 def reset_votes(year: int):
@@ -705,23 +908,23 @@ def results():
             images.description,
             images.contest_year,
             COUNT(votes.id) as vote_count,
-            COALESCE(SUM(votes.chip_value), 0) as vote_points,
+            COALESCE(SUM(votes.vote_value), 0) as vote_points,
             SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) as hype_count,
             SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
             SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
             SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) as underrated_count,
-            (COALESCE(SUM(votes.chip_value), 0)
-             + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
-             + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
-             + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
-             + SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) * 1) as weighted_score
+            (COALESCE(SUM(votes.vote_value), 0)
+            + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
+            + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
+            + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
+            + SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) * 1) as weighted_score
         FROM images
         LEFT JOIN votes
-          ON images.id = votes.image_id AND votes.contest_year = images.contest_year
+        ON images.id = votes.image_id AND votes.contest_year = images.contest_year
         LEFT JOIN reactions
-          ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
+        ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
         WHERE images.contest_year = ?
-          AND (votes.id IS NOT NULL OR reactions.id IS NOT NULL)
+        AND (votes.id IS NOT NULL OR reactions.id IS NOT NULL)
         GROUP BY images.id
         ORDER BY weighted_score DESC, vote_count DESC
     ''', (year,)).fetchall()
@@ -789,18 +992,18 @@ def public_results_year(year: int):
             images.uploader,
             images.description,
             COUNT(votes.id) as vote_count,
-            COALESCE(SUM(votes.chip_value), 0) as vote_points,
+            COALESCE(SUM(votes.vote_value), 0) as vote_points,
             SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) as hype_count,
             SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) as creative_count,
             SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) as funny_count,
             SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) as underrated_count,
-            (COALESCE(SUM(votes.chip_value), 0)
+            (COALESCE(SUM(votes.vote_value), 0)
              + SUM(CASE WHEN reactions.reaction_type = 'hype' THEN 1 ELSE 0 END) * 2
              + SUM(CASE WHEN reactions.reaction_type = 'creative' THEN 1 ELSE 0 END) * 2
              + SUM(CASE WHEN reactions.reaction_type = 'funny' THEN 1 ELSE 0 END) * 1
              + SUM(CASE WHEN reactions.reaction_type = 'underrated' THEN 1 ELSE 0 END) * 1) as weighted_score
         FROM images
-        LEFT JOIN votes ON images.id = votes.image_id
+        LEFT JOIN votes ON images.id = votes.image_id AND votes.contest_year = images.contest_year
         LEFT JOIN reactions ON images.id = reactions.image_id AND reactions.contest_year = images.contest_year
         WHERE images.visible = 1 AND images.contest_year = ?
         GROUP BY images.id

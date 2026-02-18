@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Vote Options</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .draggable { cursor: grab; }
+    .dragging { opacity: .6; }
+    .handle { width: 28px; text-align:center; cursor: grab; user-select: none; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+</head>
+<body class="bg-light">
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Vote Options</h3>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.admin_settings') }}">Runtime Settings</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.upload', year=year) }}">Upload</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.results', year=year) }}">Results</a>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+      <div><strong>Jahr:</strong></div>
+      {% for y in available_years %}
+        <a class="btn btn-sm {% if y == year %}btn-primary{% else %}btn-outline-primary{% endif %}"
+           href="{{ url_for('main.admin_vote_options', year=y) }}">{{ y }}</a>
+      {% endfor %}
+      <div class="ms-auto text-muted small">
+        vote_mode: <span class="badge bg-dark">{{ year_cfg.vote_mode }}</span>
+        max_actions: <span class="badge bg-dark">{{ year_cfg.max_actions }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Form -->
+  <div class="card mb-3">
+    <div class="card-header">Option hinzufügen / bearbeiten</div>
+    <div class="card-body">
+      <form method="post" class="row g-2" id="optForm">
+        <input type="hidden" name="action" value="upsert">
+        <input type="hidden" name="id" id="f_id" value="0">
+
+        <div class="col-md-3">
+          <label class="form-label">opt_key (unique)</label>
+          <input class="form-control mono" name="opt_key" id="f_opt_key" placeholder="chip_25 / heart / all_in" required>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">label</label>
+          <input class="form-control" name="label" id="f_label" placeholder="25 / Vote / All-in" required>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">icon</label>
+          <input class="form-control" name="icon" id="f_icon" placeholder="🪙 / ❤️ / 🎰">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">value</label>
+          <input class="form-control" type="number" name="value" id="f_value" value="1" min="1">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">exclusive_group</label>
+          <input class="form-control mono" name="exclusive_group" id="f_exclusive_group" placeholder="allin">
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-3 align-items-center mt-1">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="unique_per_user" id="f_unique">
+            <label class="form-check-label" for="f_unique">unique_per_user</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="is_special" id="f_special">
+            <label class="form-check-label" for="f_special">is_special</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="active" id="f_active" checked>
+            <label class="form-check-label" for="f_active">active</label>
+          </div>
+
+          <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Speichern</button>
+            <button class="btn btn-outline-secondary" type="button" id="resetFormBtn">Reset</button>
+          </div>
+        </div>
+      </form>
+      <div class="text-muted small mt-2">
+        Tipp: <span class="mono">opt_key</span> muss exakt dem entsprechen, was Backend erwartet (z.B. <span class="mono">chip_25</span>, <span class="mono">all_in</span>, <span class="mono">heart</span>).
+      </div>
+    </div>
+  </div>
+
+  <!-- List / Order / Active -->
+  <form method="post" class="card">
+    <div class="card-header d-flex align-items-center">
+      <div class="me-auto">Optionen (Drag&Drop für Reihenfolge)</div>
+      <input type="hidden" name="action" value="save_order">
+      <input type="hidden" name="order" id="orderField" value="">
+      <button class="btn btn-success btn-sm" type="submit" id="saveOrderBtn">Reihenfolge & Active speichern</button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th style="width:40px;"></th>
+            <th>opt_key</th>
+            <th>label</th>
+            <th>icon</th>
+            <th>value</th>
+            <th>unique</th>
+            <th>exclusive_group</th>
+            <th>special</th>
+            <th>active</th>
+            <th style="width:140px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="optTbody">
+        {% for o in options %}
+          <tr class="draggable" draggable="true" data-id="{{ o.id }}"
+              data-opt_key="{{ o.opt_key }}"
+              data-label="{{ o.label }}"
+              data-icon="{{ o.icon or '' }}"
+              data-value="{{ o.value or 1 }}"
+              data-unique="{{ 1 if o.unique_per_user else 0 }}"
+              data-exclusive="{{ o.exclusive_group or '' }}"
+              data-special="{{ 1 if o.is_special else 0 }}"
+              data-active="{{ 1 if o.active else 0 }}">
+            <td class="handle">☰</td>
+            <td class="mono">{{ o.opt_key }}</td>
+            <td>{{ o.label }}</td>
+            <td>{{ o.icon or '' }}</td>
+            <td>{{ o.value or 1 }}</td>
+            <td>{{ 1 if o.unique_per_user else 0 }}</td>
+            <td class="mono">{{ o.exclusive_group or '' }}</td>
+            <td>{{ 1 if o.is_special else 0 }}</td>
+            <td>
+              <input class="form-check-input" type="checkbox" name="active_{{ o.id }}" {% if o.active %}checked{% endif %}>
+            </td>
+            <td>
+              <button type="button" class="btn btn-outline-primary btn-sm editBtn">Edit</button>
+              <form method="post" class="d-inline">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="{{ o.id }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Option wirklich löschen?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+
+</div>
+
+<script>
+  const tbody = document.getElementById('optTbody');
+  const orderField = document.getElementById('orderField');
+
+  function updateOrderField() {
+    const ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(tr => tr.dataset.id);
+    orderField.value = ids.join(',');
+  }
+  updateOrderField();
+
+  // Drag & Drop
+  let dragging = null;
+
+  tbody.addEventListener('dragstart', (e) => {
+    const tr = e.target.closest('tr.draggable');
+    if (!tr) return;
+    dragging = tr;
+    tr.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  tbody.addEventListener('dragend', () => {
+    if (dragging) dragging.classList.remove('dragging');
+    dragging = null;
+    updateOrderField();
+  });
+
+  tbody.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const after = getDragAfterElement(tbody, e.clientY);
+    const tr = dragging;
+    if (!tr) return;
+    if (after == null) {
+      tbody.appendChild(tr);
+    } else {
+      tbody.insertBefore(tr, after);
+    }
+  });
+
+  function getDragAfterElement(container, y) {
+    const els = [...container.querySelectorAll('tr.draggable:not(.dragging)')];
+    return els.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      }
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+  }
+
+  // Edit -> füllt das Form oben
+  const form = document.getElementById('optForm');
+  const resetBtn = document.getElementById('resetFormBtn');
+
+  function resetForm() {
+    document.getElementById('f_id').value = 0;
+    document.getElementById('f_opt_key').value = '';
+    document.getElementById('f_label').value = '';
+    document.getElementById('f_icon').value = '';
+    document.getElementById('f_value').value = 1;
+    document.getElementById('f_exclusive_group').value = '';
+    document.getElementById('f_unique').checked = false;
+    document.getElementById('f_special').checked = false;
+    document.getElementById('f_active').checked = true;
+  }
+
+  resetBtn.addEventListener('click', resetForm);
+
+  tbody.querySelectorAll('.editBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      document.getElementById('f_id').value = tr.dataset.id;
+      document.getElementById('f_opt_key').value = tr.dataset.opt_key || '';
+      document.getElementById('f_label').value = tr.dataset.label || '';
+      document.getElementById('f_icon').value = tr.dataset.icon || '';
+      document.getElementById('f_value').value = tr.dataset.value || 1;
+      document.getElementById('f_exclusive_group').value = tr.dataset.exclusive || '';
+      document.getElementById('f_unique').checked = (tr.dataset.unique === '1');
+      document.getElementById('f_special').checked = (tr.dataset.special === '1');
+      document.getElementById('f_active').checked = (tr.dataset.active === '1');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
