@@ -1,0 +1,179 @@
+﻿{% extends "base_admin.html" %}
+{% set section = 'categories' %}
+
+{% block title %}Kategorien{% endblock %}
+{% block page_title %}Reaktions-Kategorien{% endblock %}
+
+{% block body %}
+<div class="alert alert-info py-2">Reihenfolge: 1) Contest in Settings, 2) Stimmoptionen, 3) Kategorien, 4) Upload und Publish.</div>
+
+<div class="content-card p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Contest auswählen</label>
+      <select class="form-select" name="year" onchange="this.form.submit()">
+        {% for c in contests %}
+          <option value="{{ c.id }}" {% if c.id == year %}selected{% endif %}>{{ contest_admin_label(c) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-outline-primary" type="submit">Laden</button></div>
+  </form>
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+    <strong>Theme-Key-Erkennung</strong>
+    <span class="badge text-bg-light">Theme: {{ current_theme_id }}</span>
+    <span class="badge text-bg-light">Preset: {{ theme_preset_source }}</span>
+    {% if detected_theme_keys %}
+    <form method="post" class="ms-auto">
+      <input type="hidden" name="year" value="{{ year }}">
+      <button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="import_theme_defaults">Fehlende Theme-Keys importieren</button>
+    </form>
+    <form method="post">
+      <input type="hidden" name="year" value="{{ year }}">
+      <button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="sync_theme_defaults">Theme-Preset synchronisieren</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if detected_theme_keys %}
+    <div class="d-flex flex-wrap gap-2">
+      {% for k in detected_theme_keys %}
+        <span class="badge {% if k.exists %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+          {{ k.reaction_key }}{% if k.label and k.label != k.reaction_key %} ({{ k.label }}){% endif %} · {% if k.exists %}vorhanden{% else %}fehlt{% endif %}
+        </span>
+      {% endfor %}
+    </div>
+    <div class="small text-secondary mt-2">Laufzeit nutzt immer die Contest-Daten. Das Theme liefert nur Presets aus `reaction_options.json`. Theme-Bilder aus `themes/&lt;theme_id&gt;/assets/` werden dabei in die Contest-Assets kopiert und können danach hier per Upload ersetzt werden.</div>
+  {% else %}
+    <div class="text-secondary small">Keine Reaktions-Presets im Theme gefunden.</div>
+  {% endif %}
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div id="themeCategoryForm"></div>
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+    <div>
+      <strong>Theme-Preset bearbeiten</strong>
+      <div class="small text-secondary mt-1">Hier bearbeitest du direkt `reaction_options.json` des aktuellen Themes. Icons und Theme-Bilder werden mitgespeichert; danach werden alle Contests mit diesem Theme automatisch synchronisiert.</div>
+    </div>
+    <span class="badge text-bg-light">Theme: {{ current_theme_id }}</span>
+  </div>
+
+  <form method="post" class="mb-3" enctype="multipart/form-data">
+    <div class="row g-2">
+      <input type="hidden" name="action" value="theme_upsert">
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="theme_original_key" id="tf_original_key" value="">
+      <div class="col-md-2"><input class="form-control" name="theme_reaction_key" id="tf_key" placeholder="key, z.B. wow" required></div>
+      <div class="col-md-2"><input class="form-control" name="theme_label" id="tf_label" placeholder="Label" required></div>
+      <div class="col-md-2"><select class="form-select" name="theme_display_type" id="tf_display"><option value="icon">icon</option><option value="image">image</option></select></div>
+      <div class="col-md-2"><input class="form-control" name="theme_icon" id="tf_icon" placeholder="icon"></div>
+      <div class="col-md-1"><input class="form-control" type="number" name="theme_points" id="tf_points" value="0" min="0"></div>
+      <div class="col-md-3">
+        <input class="form-control" type="file" name="theme_image_file" id="tf_image_file" accept="image/*">
+        <input type="hidden" name="theme_current_image_filename" id="tf_current_image_filename" value="">
+        <div class="small text-secondary mt-1">Theme-Bild: <span id="tf_current_image_text">-</span></div>
+      </div>
+      <div class="col-md-4 d-flex gap-3 align-items-center flex-wrap">
+        <label><input type="checkbox" name="theme_include_in_total" id="tf_include_in_total" checked> zählt ins Gesamtranking</label>
+        <label><input type="checkbox" name="theme_active" id="tf_active" checked> active</label>
+      </div>
+      <div class="col-md-12 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit">Theme-Preset speichern</button>
+        <button type="button" class="btn btn-outline-secondary" id="themeResetBtn">Reset</button>
+      </div>
+    </div>
+  </form>
+
+  {% if theme_reaction_presets %}
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>key</th><th>label</th><th>display</th><th>icon</th><th>image</th><th>points</th><th>gesamt</th><th>active</th><th>actions</th></tr></thead>
+      <tbody>
+        {% for t in theme_reaction_presets %}
+        <tr data-theme-key="{{ t.reaction_key }}" data-theme-label="{{ t.label }}" data-theme-display="{{ t.display_type or 'icon' }}" data-theme-icon="{{ t.icon or '' }}" data-theme-img="{{ t.image_filename or '' }}" data-theme-points="{{ t.points or 0 }}" data-theme-include="{{ 1 if t.include_in_total else 0 }}" data-theme-active="{{ 1 if t.active else 0 }}">
+          <td>{{ t.reaction_key }}</td>
+          <td>{{ t.label }}</td>
+          <td>{{ t.display_type or 'icon' }}</td>
+          <td>{{ t.icon or '' }}</td>
+          <td>{{ t.image_filename or '' }}</td>
+          <td>{{ t.points or 0 }}</td>
+          <td>{% if t.include_in_total %}ja{% else %}separat{% endif %}</td>
+          <td>{{ 1 if t.active else 0 }}</td>
+          <td class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm themeEditBtn" type="button">Theme edit</button>
+            <form method="post" onsubmit="return confirm('Theme-Kategorie wirklich löschen? Sie wird auch aus Contests mit diesem Theme entfernt.');">
+              <input type="hidden" name="action" value="theme_delete">
+              <input type="hidden" name="year" value="{{ year }}">
+              <input type="hidden" name="theme_reaction_key" value="{{ t.reaction_key }}">
+              <button class="btn btn-outline-danger btn-sm" type="submit">Theme delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-secondary small">Noch keine Theme-Kategorien vorhanden. Du kannst hier direkt neue anlegen; dabei wird `reaction_options.json` automatisch erstellt.</div>
+  {% endif %}
+</div>
+
+<form method="post" class="content-card p-3 mb-3" enctype="multipart/form-data">
+  <div id="contestCategoryForm"></div>
+  <div class="small text-secondary mb-3">Dieser Bereich bearbeitet nur den aktuell ausgewählten Contest. Wenn du hier etwas änderst, überschreibst du die Theme-Vorlage nur für diesen Contest.</div>
+  <div class="row g-2">
+    <input type="hidden" name="action" value="upsert"><input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="id" id="f_id" value="0">
+    <div class="col-md-2"><input class="form-control" name="reaction_key" id="f_key" placeholder="key, z.B. hype" required></div>
+    <div class="col-md-2"><input class="form-control" name="label" id="f_label" placeholder="Label, z.B. Hype" required></div>
+    <div class="col-md-2"><select class="form-select" name="display_type" id="f_display"><option value="icon">icon</option><option value="image">image</option></select></div>
+    <div class="col-md-2"><input class="form-control" name="icon" id="f_icon" placeholder="icon"></div>
+    <div class="col-md-1"><input class="form-control" type="number" name="points" id="f_points" value="0" min="0"></div>
+    <div class="col-md-3">
+      <input class="form-control" type="file" name="image_file" id="f_image_file" accept="image/*">
+      <input type="hidden" name="current_image_filename" id="f_current_image_filename" value="">
+      <div class="small text-secondary mt-1">Aktuell: <span id="f_current_image_text">-</span></div>
+    </div>
+    <div class="col-md-4 d-flex gap-3 align-items-center flex-wrap">
+      <label><input type="checkbox" name="include_in_total" id="f_include_in_total" checked> zählt ins Gesamtranking</label>
+      <label><input type="checkbox" name="active" id="f_active" checked> active</label>
+    </div>
+    <div class="col-md-12 d-flex gap-2"><button class="btn btn-primary" type="submit">Speichern</button><button type="button" class="btn btn-outline-secondary" id="resetBtn">Reset</button></div>
+  </div>
+</form>
+
+<form method="post" class="content-card">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0"><thead><tr><th>key</th><th>label</th><th>display</th><th>image</th><th>points</th><th>gesamt</th><th>active</th><th>actions</th></tr></thead><tbody>
+      {% for c in categories %}
+      <tr data-id="{{ c.id }}" data-key="{{ c.reaction_key }}" data-label="{{ c.label }}" data-display="{{ c.display_type or 'icon' }}" data-icon="{{ c.icon or '' }}" data-img="{{ c.image_filename or '' }}" data-points="{{ c.points or 0 }}" data-include="{{ 1 if c.include_in_total else 0 }}" data-active="{{ 1 if c.active else 0 }}">
+        <td>{{ c.reaction_key }}</td><td>{{ c.label }}</td><td>{{ c.display_type or 'icon' }}</td><td>{{ c.image_filename or '' }}</td><td>{{ c.points or 0 }}</td><td>{% if c.include_in_total %}ja{% else %}separat{% endif %}</td><td>{{ 1 if c.active else 0 }}</td>
+        <td>
+          <button class="btn btn-outline-primary btn-sm editBtn" type="button">Edit</button>
+          <button class="btn btn-outline-danger btn-sm" type="submit" name="action" value="delete" onclick="document.getElementById('delete_id').value='{{ c.id }}'">Delete</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+  </div>
+  <input type="hidden" name="year" value="{{ year }}"><input type="hidden" id="delete_id" name="id" value="0">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const currentImageTextEl = document.getElementById('f_current_image_text');
+const contestFormAnchor = document.getElementById('contestCategoryForm');
+const reset=()=>{f_id.value=0;f_key.value='';f_label.value='';f_display.value='icon';f_icon.value='';f_points.value=0;f_current_image_filename.value='';currentImageTextEl.textContent='-';f_image_file.value='';f_include_in_total.checked=true;f_active.checked=true;};
+document.getElementById('resetBtn').addEventListener('click',reset);
+for(const btn of document.querySelectorAll('.editBtn')){btn.addEventListener('click',()=>{const tr=btn.closest('tr');f_id.value=tr.dataset.id;f_key.value=tr.dataset.key;f_label.value=tr.dataset.label;f_display.value=tr.dataset.display;f_icon.value=tr.dataset.icon;f_points.value=tr.dataset.points||0;f_current_image_filename.value=tr.dataset.img||'';currentImageTextEl.textContent=tr.dataset.img||'-';f_image_file.value='';f_include_in_total.checked=tr.dataset.include==='1';f_active.checked=tr.dataset.active==='1';contestFormAnchor.scrollIntoView({block:'start',behavior:'smooth'});});}
+
+const themeImageTextEl = document.getElementById('tf_current_image_text');
+const themeFormAnchor = document.getElementById('themeCategoryForm');
+const resetTheme=()=>{tf_original_key.value='';tf_key.value='';tf_label.value='';tf_display.value='icon';tf_icon.value='';tf_points.value=0;tf_current_image_filename.value='';themeImageTextEl.textContent='-';tf_image_file.value='';tf_include_in_total.checked=true;tf_active.checked=true;};
+document.getElementById('themeResetBtn').addEventListener('click',resetTheme);
+for(const btn of document.querySelectorAll('.themeEditBtn')){btn.addEventListener('click',()=>{const tr=btn.closest('tr');tf_original_key.value=tr.dataset.themeKey;tf_key.value=tr.dataset.themeKey;tf_label.value=tr.dataset.themeLabel;tf_display.value=tr.dataset.themeDisplay;tf_icon.value=tr.dataset.themeIcon;tf_points.value=tr.dataset.themePoints||0;tf_current_image_filename.value=tr.dataset.themeImg||'';themeImageTextEl.textContent=tr.dataset.themeImg||'-';tf_image_file.value='';tf_include_in_total.checked=tr.dataset.themeInclude==='1';tf_active.checked=tr.dataset.themeActive==='1';themeFormAnchor.scrollIntoView({block:'start',behavior:'smooth'});});}
+</script>
+{% endblock %}

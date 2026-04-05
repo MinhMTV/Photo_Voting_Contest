@@ -2,85 +2,230 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Ranking – Fotowettbewerb</title>
+    <title>Admin Ranking - Fotowettbewerb</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { padding-top: 60px; }
+        body { padding-top: 32px; background: #f6f8fb; }
         .image-box {
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 10px;
+            border: 1px solid #d9e0ea;
+            border-radius: 14px;
+            padding: 12px;
             margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
-            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(28, 45, 64, 0.06);
+            height: 100%;
         }
-        .image-box img { width: 100%; height: auto; border-radius: 6px; }
-        .vote-count { font-weight: bold; color: #198754; }
+        .image-box img { width: 100%; height: 240px; object-fit: cover; border-radius: 10px; }
+        .stat-line { font-weight: 600; color: #156c43; }
+        .reaction-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: #eef3ff; color: #28407d; font-size: .82rem; }
+        .concealed { background: #fff7e8; color: #946200; border: 1px dashed #ebc876; border-radius: 10px; padding: 10px 12px; }
+        .details-list { margin: 0; padding-left: 1rem; }
+        .details-list li + li { margin-top: 4px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="d-flex gap-2 align-items-center mb-3">
-    {% for y in available_years %}
-        <a class="btn btn-outline-primary btn-sm {% if y == year %}active{% endif %}"
-        href="{{ url_for('main.results', year=y) }}">
-        {{ y }}
+<div class="container pb-4">
+    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+    {% for c in contests %}
+        <a class="btn btn-outline-primary btn-sm {% if c.id == year %}active{% endif %}"
+        href="{{ url_for('main.results', contest_id=c.id, show_ranking=1 if show_ranking else 0) }}">
+        {{ contest_admin_label(c) }}
         </a>
     {% endfor %}
     </div>
 
-    <h1 class="mb-4">📊 Aktuelles Ranking</h1>
-    <p><strong>👥 Wähler:innen:</strong> {{ voters }} | <strong>🗳️ Gesamtstimmen:</strong> {{ total_votes }}</p>
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+        <div>
+            <h1 class="mb-1">Admin Ranking</h1>
+            <p class="text-muted mb-1">{{ contest_label(current_contest) }}{% if contest_start_date(current_contest) %} | Startdatum {{ contest_start_date(current_contest) }}{% endif %}</p>
+            <p class="mb-0"><strong>Wähler:innen:</strong> {{ voters }} | <strong>Gesamtstimmen:</strong> {{ total_votes }}</p>
+        </div>
+        <form method="get" class="card p-3 border-0 shadow-sm" style="min-width: 280px;">
+            <input type="hidden" name="year" value="{{ year }}">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="showRankingSwitch" name="show_ranking" value="1" {% if show_ranking %}checked{% endif %}>
+                <label class="form-check-label" for="showRankingSwitch">Ranking, Punkte und Details anzeigen</label>
+            </div>
+            <div class="small text-muted mt-2">Standardmäßig sind Punkte und Reihenfolge verborgen. Ohne Aktivierung werden die Bilder zufällig angezeigt.</div>
+            <button class="btn btn-primary btn-sm mt-3" type="submit">Ansicht aktualisieren</button>
+        </form>
+    </div>
+
+    {% if not show_ranking %}
+    <div class="concealed mb-3">
+        Ranking ist aktuell ausgeblendet. Die Karten unten sind absichtlich zufällig gemischt, damit man beim Durchsehen nicht unbewusst vom Zwischenstand beeinflusst wird.
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3 flex-wrap gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('main.upload', contest_id=year) }}" class="btn btn-secondary">Zurück zum Adminbereich</a>
+            <a href="{{ contest_public_url(current_contest) }}" target="_blank" class="btn btn-outline-primary">Öffentliche Abstimmungsseite</a>
+            <a href="{{ contest_results_url(current_contest) }}" target="_blank" class="btn btn-outline-primary">Öffentliche Ergebnisse</a>
+        </div>
+        <form method="POST" action="{{ url_for('main.toggle_publish') }}">
+            <input type="hidden" name="year" value="{{ year }}">
+            {% if published %}
+                <button type="submit" name="action" value="hide" class="btn btn-warning">Veröffentlichung zurücknehmen</button>
+            {% else %}
+                <button type="submit" name="action" value="show" class="btn btn-success">Ergebnisse veröffentlichen</button>
+            {% endif %}
+        </form>
+    </div>
 
     <div class="row">
       {% for image in top_images %}
-      <div class="col-12 col-sm-6 col-md-4">
+      {% set details = details_by_image.get(image.id, {}) %}
+      <div class="col-12 col-sm-6 col-xl-4">
           <div class="image-box">
-              <img src="{{ url_for('main.media_year', year=image.contest_year, filename=image.filename) }}" alt="Bild">
-              {% if image.uploader %}<p class="text-muted small mt-2"><strong>{{ image.uploader }}</strong></p>{% endif %}
-              {% if image.description %}<p>{{ image.description }}</p>{% endif %}
-              <p class="vote-count">✅ Stimmen: {{ image.vote_count }} · Chips: {{ image.vote_points or 0 }}</p>
-              <p class="small mb-1">🏁 Score: {{ image.weighted_score or 0 }}</p>
-              <p class="small text-muted">🚀 {{ image.hype_count or 0 }} · 🎨 {{ image.creative_count or 0 }} · 😂 {{ image.funny_count or 0 }} · 💎 {{ image.underrated_count or 0 }}</p>
+              <img src="{{ url_for('main.media_year', year=image.contest_id or image.contest_year, filename=image.filename) }}" alt="Bild">
+              <div class="mt-3">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                      <div>
+                          <div class="fw-semibold">{{ image.uploader or 'Ohne Namen' }}</div>
+                          {% if image.description %}<div class="text-muted small mt-1">{{ image.description }}</div>{% endif %}
+                      </div>
+                      {% if image.exclude_from_results and not image.include_in_category_results %}
+                      <span class="badge text-bg-warning">Nur im Admin sichtbar</span>
+                      {% elif image.exclude_from_results %}
+                      <span class="badge text-bg-warning">Nur in Kategorien-Rankings</span>
+                      {% elif not image.include_in_category_results %}
+                      <span class="badge text-bg-info">Nur im Haupt-Ranking</span>
+                      {% elif show_ranking %}
+                      <span class="badge text-bg-dark">Platz {{ image.rank }}</span>
+                      {% else %}
+                      <span class="badge text-bg-light">Reihenfolge verborgen</span>
+                      {% endif %}
+                  </div>
+
+                  {% if show_ranking %}
+                  <div class="stat-line mt-3">Stimmen: {{ image.vote_count }} | Gesamtpunkte: {{ image.weighted_score or 0 }}</div>
+                  <div class="small text-muted">Vote-Punkte: {{ image.vote_points or 0 }} | Duell-Punkte: {{ image.duel_points or 0 }} | Kategorien im Gesamtranking: {{ image.reaction_points_in_total or 0 }} | Kategoriepunkte gesamt: {{ image.reaction_points_total or 0 }}</div>
+                  {% if image.exclude_from_results or not image.include_in_category_results %}
+                  <div class="small text-warning mt-1">
+                    {% if image.exclude_from_results and not image.include_in_category_results %}
+                    Dieses Bild sammelt Daten, ist aber sowohl aus dem Haupt-Ranking als auch aus Kategorien-Rankings ausgeschlossen.
+                    {% elif image.exclude_from_results %}
+                    Dieses Bild sammelt Stimmen und Reaktionen, ist aber aus dem Haupt-Ranking ausgeschlossen und erscheint nur in Kategorien-Rankings.
+                    {% else %}
+                    Dieses Bild sammelt Stimmen und Reaktionen, erscheint aber nicht in den Kategorien-Rankings.
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                  <div class="d-flex flex-wrap gap-2 mt-2">
+                    {% for reaction in reaction_options %}
+                      {% set reaction_key = reaction.reaction_key %}
+                      {% set reaction_count = image.reaction_breakdown.get(reaction_key, 0) if image.reaction_breakdown else 0 %}
+                      {% set reaction_points = image.reaction_points_breakdown.get(reaction_key, 0) if image.reaction_points_breakdown else 0 %}
+                      <span class="reaction-badge">{{ reaction.label }}: {{ reaction_count }} | {{ reaction_points }} Punkte{% if not reaction.include_in_total %} | separat{% endif %}</span>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <div class="concealed mt-3">Stimmen, Punkte und Kategorien sind für diese Ansicht verborgen.</div>
+                  {% endif %}
+
+                  <details class="mt-3">
+                      <summary class="fw-semibold">Details</summary>
+                      {% if show_ranking %}
+                      <div class="mt-3">
+                          <div class="small text-muted mb-1">Vote-Aufschlüsselung</div>
+                          {% if details.vote_breakdown %}
+                          <ul class="details-list">
+                              {% for vote in details.vote_breakdown %}
+                              <li>{{ vote.label }}: {{ vote.count }}x | {{ vote.points_each }} Punkte je Vote | Summe {{ vote.total_points }}</li>
+                              {% endfor %}
+                          </ul>
+                          {% else %}
+                          <div class="small text-muted">Noch keine Stimmen vorhanden.</div>
+                          {% endif %}
+                      </div>
+
+                      <div class="mt-3">
+                          <div class="small text-muted mb-1">Duell</div>
+                          {% if details.duel_summary and details.duel_summary.count %}
+                          <ul class="details-list">
+                              <li>Duellmaster: {{ details.duel_summary.count }}x | {{ details.duel_summary.points_each }} Punkte pro Duell | Summe {{ details.duel_summary.total_points }}</li>
+                          </ul>
+                          {% else %}
+                          <div class="small text-muted">Noch keine Duell-Punkte vorhanden.</div>
+                          {% endif %}
+                      </div>
+
+                      <div class="mt-3">
+                          <div class="small text-muted mb-1">Reaktions-Aufschlüsselung</div>
+                          {% if details.reaction_breakdown %}
+                          <ul class="details-list">
+                              {% for reaction in details.reaction_breakdown %}
+                              <li>{{ reaction.label }}: {{ reaction.count }}x | {{ reaction.points_each }} Punkte je Reaktion | Summe {{ reaction.total_points }} | {% if reaction.include_in_total %}zählt ins Gesamtranking{% else %}nur separate Kategorienwertung{% endif %}</li>
+                              {% endfor %}
+                          </ul>
+                          {% else %}
+                          <div class="small text-muted">Noch keine Reaktionen vorhanden.</div>
+                          {% endif %}
+                      </div>
+
+                      <div class="mt-3">
+                          <div class="small text-muted mb-1">Einzelvotes</div>
+                          {% if details.vote_history %}
+                          <ul class="details-list">
+                              {% for item in details.vote_history %}
+                              <li>{{ item.voter }}: {{ item.label }} | {{ item.points }} Punkte{% if item.created_at %} | {{ item.created_at.replace('T', ' ')[:19] }}{% endif %}</li>
+                              {% endfor %}
+                          </ul>
+                          {% else %}
+                          <div class="small text-muted">Noch keine Einzelvotes vorhanden.</div>
+                          {% endif %}
+                      </div>
+
+                      <div class="mt-3">
+                          <div class="small text-muted mb-1">Einzelduelle</div>
+                          {% if details.duel_history %}
+                          <ul class="details-list">
+                              {% for item in details.duel_history %}
+                              <li>{{ item.voter }}: {{ item.label }} | {{ item.points }} Punkte{% if item.created_at %} | {{ item.created_at.replace('T', ' ')[:19] }}{% endif %}</li>
+                              {% endfor %}
+                          </ul>
+                          {% else %}
+                          <div class="small text-muted">Noch keine Einzelduelle vorhanden.</div>
+                          {% endif %}
+                      </div>
+
+                      <div class="mt-3">
+                          <div class="small text-muted mb-1">Einzelreaktionen</div>
+                          {% if details.reaction_history %}
+                          <ul class="details-list">
+                              {% for item in details.reaction_history %}
+                              <li>{{ item.voter }}: {{ item.label }} | {{ item.points }} Punkte | {% if item.include_in_total %}gesamt{% else %}separat{% endif %}{% if item.created_at %} | {{ item.created_at.replace('T', ' ')[:19] }}{% endif %}</li>
+                              {% endfor %}
+                          </ul>
+                          {% else %}
+                          <div class="small text-muted">Noch keine Einzelreaktionen vorhanden.</div>
+                          {% endif %}
+                      </div>
+                      {% else %}
+                      <div class="small text-muted mt-2">Details werden erst sichtbar, wenn du oben das Ranking einblendest.</div>
+                      {% endif %}
+                  </details>
+              </div>
           </div>
       </div>
       {% endfor %}
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-        <a href="{{ url_for('main.upload') }}" class="btn btn-secondary">🔙 Zurück zum Adminbereich</a>
-        <a href="{{ url_for('main.public_results_year', year=year) }}"
-        target="_blank"
-        class="btn btn-outline-primary ms-2">
-        🌍 Öffentliches Ranking
-        </a>
-        <form method="POST" action="{{ url_for('main.toggle_publish') }}">
-            <input type="hidden" name="year" value="{{ year }}">
-            {% if published %}
-                <button type="submit" name="action" value="hide" class="btn btn-warning">🔒 Veröffentlichung zurücknehmen</button>
-            {% else %}
-                <button type="submit" name="action" value="show" class="btn btn-success">🚀 Ergebnisse veröffentlichen</button>
-            {% endif %}
-        </form>
-
-
-    </div>
-
     <div class="card mt-3 border-danger-subtle">
         <div class="card-body d-flex flex-wrap gap-2 align-items-center justify-content-between">
             <div>
-                <div class="fw-semibold text-danger">Stimmen/Chips zurücksetzen</div>
-                <div class="small text-muted">Löscht Votes + Chip-Werte + Kategorien/Reactions + Duell-Votes für das gewählte Jahr.</div>
+                <div class="fw-semibold text-danger">Stimmen und Punkte zurücksetzen</div>
+                <div class="small text-muted">Löscht Stimmen, Reaktionen und Duell-Stimmen für den ausgewählten Contest.</div>
             </div>
-            <form method="POST" action="{{ url_for('main.reset_year_votes_admin') }}" class="d-flex gap-2 align-items-center" onsubmit="return confirm('Wirklich alle Stimmen/Chips für dieses Jahr löschen?');">
-                <select name="year" class="form-select form-select-sm" style="min-width: 120px;">
-                    {% for y in available_years %}
-                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            <form method="POST" action="{{ url_for('main.reset_year_votes_admin') }}" class="d-flex gap-2 align-items-center" onsubmit="return confirm('Wirklich alle Stimmen und Punkte für diesen Contest löschen?');">
+                <select name="year" class="form-select form-select-sm" style="min-width: 220px;">
+                    {% for c in contests %}
+                    <option value="{{ c.id }}" {% if c.id == year %}selected{% endif %}>{{ contest_admin_label(c) }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="btn btn-outline-danger btn-sm">Reset Jahr</button>
+                <button type="submit" class="btn btn-outline-danger btn-sm">Reset Contest</button>
             </form>
         </div>
     </div>

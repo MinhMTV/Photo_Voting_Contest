@@ -1,0 +1,12 @@
+[
+  {
+    "opt_key": "heart",
+    "label": "Vote",
+    "icon": "❤",
+    "display_type": "icon",
+    "value": 1,
+    "unique_per_user": 0,
+    "active": true,
+    "sort_order": 10
+  }
+]

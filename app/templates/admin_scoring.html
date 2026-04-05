@@ -1,0 +1,48 @@
+﻿{% extends "base_admin.html" %}
+{% set section = 'scoring' %}
+
+{% block title %}Scoring{% endblock %}
+{% block page_title %}Scoring Rules{% endblock %}
+
+{% block body %}
+<div class="alert alert-info py-2">Hier definierst du, wie viele Punkte jede Vote-Option und jede Kategorie gibt.</div>
+
+<div class="content-card p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Contest auswählen</label>
+      <select class="form-select" name="year" onchange="this.form.submit()">
+        {% for c in contests %}
+          <option value="{{ c.id }}" {% if c.id == year %}selected{% endif %}>{{ contest_admin_label(c) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-outline-primary" type="submit">Laden</button></div>
+  </form>
+</div>
+
+<form method="post" class="content-card p-3">
+  <input type="hidden" name="year" value="{{ year }}">
+  <h6 class="mb-3">Stimmoptionen</h6>
+  {% for o in vote_options %}
+  <div class="row g-2 mb-2">
+    <div class="col-md-3"><input class="form-control" value="{{ o.label }} ({{ o.opt_key }})" disabled></div>
+    <div class="col-md-3"><input class="form-control" name="rule_key" value="{{ o.opt_key }}" readonly></div>
+    <input type="hidden" name="rule_type" value="vote_option">
+    <div class="col-md-2"><input class="form-control" type="number" name="rule_points" value="{{ existing.get('vote_option::' + o.opt_key, o.value or 1) }}"></div>
+  </div>
+  {% endfor %}
+
+  <h6 class="mt-4 mb-3">Kategorien/Reaktionen</h6>
+  {% for r in reaction_options %}
+  <div class="row g-2 mb-2">
+    <div class="col-md-3"><input class="form-control" value="{{ r.label }} ({{ r.reaction_key }})" disabled></div>
+    <div class="col-md-3"><input class="form-control" name="rule_key" value="{{ r.reaction_key }}" readonly></div>
+    <input type="hidden" name="rule_type" value="reaction">
+    <div class="col-md-2"><input class="form-control" type="number" name="rule_points" value="{{ existing.get('reaction::' + r.reaction_key, 0) }}"></div>
+  </div>
+  {% endfor %}
+
+  <button class="btn btn-success mt-3" type="submit">Scoring speichern</button>
+</form>
+{% endblock %}

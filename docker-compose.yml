@@ -7,6 +7,10 @@ services:
     restart: unless-stopped
     ports:
       - "5050:5050"
+    volumes:
+      - ./instance:/app/instance
+      - ./app/static:/app/app/static
+      - ./backups:/app/backups
     networks:
       - wp_net  # <- hier hinzufügen
 

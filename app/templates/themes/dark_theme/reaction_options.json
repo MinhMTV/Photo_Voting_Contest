@@ -1,0 +1,38 @@
+[
+  {
+    "reaction_key": "hype",
+    "label": "Hype",
+    "display_type": "icon",
+    "icon": "🚀",
+    "points": 2,
+    "active": true,
+    "sort_order": 10
+  },
+  {
+    "reaction_key": "creative",
+    "label": "Kreativ",
+    "display_type": "icon",
+    "icon": "🎨",
+    "points": 2,
+    "active": true,
+    "sort_order": 20
+  },
+  {
+    "reaction_key": "funny",
+    "label": "Funny",
+    "display_type": "icon",
+    "icon": "😂",
+    "points": 1,
+    "active": true,
+    "sort_order": 30
+  },
+  {
+    "reaction_key": "underrated",
+    "label": "Underrated",
+    "display_type": "icon",
+    "icon": "💎",
+    "points": 1,
+    "active": true,
+    "sort_order": 40
+  }
+]

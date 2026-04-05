@@ -315,7 +315,7 @@
           <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ image.uploader }}">
           <div class="card-body p-2">
             <div class="small">#{{ loop.index }} · <strong>{{ image.uploader or 'Anonymous' }}</strong></div>
-            <div class="small text-warning">Chips: {{ image.vote_points or 0 }} · Stimmen: {{ image.vote_count or 0 }}</div>
+            <div class="small text-warning">Punkte: {{ image.vote_points or 0 }} · Stimmen: {{ image.vote_count or 0 }}</div>
           </div>
         </div>
       </div>
@@ -515,7 +515,7 @@ function appendReveal(place, item) {
   const el = document.createElement('div');
   el.className = 'mb-2 p-2 rounded border border-warning-subtle bg-black';
   const n = participantNumberById.get(Number(item.id)) || '-';
-  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonymous'} · Chips ${item.vote_points || 0}`;
+  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonymous'} · Punkte ${item.vote_points || 0}`;
   revealList.appendChild(el);
 }
 
@@ -647,7 +647,7 @@ btn.addEventListener('click', async () => {
     </div>
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
     <div class="win-name">#${n} ${item.uploader || 'Anonymous'}</div>
-    <div class="win-meta">🪙 Chips: ${item.vote_points || 0}</div>
+    <div class="win-meta">🪙 Punkte: ${item.vote_points || 0}</div>
     <div class="win-desc">${item.description || ''}</div>`;
   casinoCelebrate();
   winnerModal.show();

@@ -1,252 +1,226 @@
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin – Vote Options</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .draggable { cursor: grab; }
-    .dragging { opacity: .6; }
-    .handle { width: 28px; text-align:center; cursor: grab; user-select: none; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-  </style>
-</head>
-<body class="bg-light">
-<div class="container py-4">
+﻿{% extends "base_admin.html" %}
+{% set section = 'vote_options' %}
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Vote Options</h3>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.admin_settings') }}">Runtime Settings</a>
-      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.upload', year=year) }}">Upload</a>
-      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.results', year=year) }}">Results</a>
-    </div>
-  </div>
+{% block title %}Stimmoptionen{% endblock %}
+{% block page_title %}Stimmoptionen{% endblock %}
 
-  <div class="card mb-3">
-    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
-      <div><strong>Jahr:</strong></div>
-      {% for y in available_years %}
-        <a class="btn btn-sm {% if y == year %}btn-primary{% else %}btn-outline-primary{% endif %}"
-           href="{{ url_for('main.admin_vote_options', year=y) }}">{{ y }}</a>
-      {% endfor %}
-      <div class="ms-auto text-muted small">
-        vote_mode: <span class="badge bg-dark">{{ year_cfg.vote_mode }}</span>
-        max_actions: <span class="badge bg-dark">{{ year_cfg.max_actions }}</span>
-      </div>
-    </div>
-  </div>
+{% block head_extra %}<style>.draggable{cursor:grab}.muted-field{background:#f8f9fa}.small-note{font-size:.875rem;color:#6c757d}</style>{% endblock %}
 
-  <!-- Add / Edit Form -->
-  <div class="card mb-3">
-    <div class="card-header">Option hinzufügen / bearbeiten</div>
-    <div class="card-body">
-      <form method="post" class="row g-2" id="optForm">
-        <input type="hidden" name="action" value="upsert">
-        <input type="hidden" name="id" id="f_id" value="0">
-
-        <div class="col-md-3">
-          <label class="form-label">opt_key (unique)</label>
-          <input class="form-control mono" name="opt_key" id="f_opt_key" placeholder="chip_25 / heart / all_in" required>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">label</label>
-          <input class="form-control" name="label" id="f_label" placeholder="25 / Vote / All-in" required>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">icon</label>
-          <input class="form-control" name="icon" id="f_icon" placeholder="🪙 / ❤️ / 🎰">
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">value</label>
-          <input class="form-control" type="number" name="value" id="f_value" value="1" min="1">
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">exclusive_group</label>
-          <input class="form-control mono" name="exclusive_group" id="f_exclusive_group" placeholder="allin">
-        </div>
-
-        <div class="col-12 d-flex flex-wrap gap-3 align-items-center mt-1">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="unique_per_user" id="f_unique">
-            <label class="form-check-label" for="f_unique">unique_per_user</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="is_special" id="f_special">
-            <label class="form-check-label" for="f_special">is_special</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="active" id="f_active" checked>
-            <label class="form-check-label" for="f_active">active</label>
-          </div>
-
-          <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-primary" type="submit">Speichern</button>
-            <button class="btn btn-outline-secondary" type="button" id="resetFormBtn">Reset</button>
-          </div>
-        </div>
-      </form>
-      <div class="text-muted small mt-2">
-        Tipp: <span class="mono">opt_key</span> muss exakt dem entsprechen, was Backend erwartet (z.B. <span class="mono">chip_25</span>, <span class="mono">all_in</span>, <span class="mono">heart</span>).
-      </div>
-    </div>
-  </div>
-
-  <!-- List / Order / Active -->
-  <form method="post" class="card">
-    <div class="card-header d-flex align-items-center">
-      <div class="me-auto">Optionen (Drag&Drop für Reihenfolge)</div>
-      <input type="hidden" name="action" value="save_order">
-      <input type="hidden" name="order" id="orderField" value="">
-      <button class="btn btn-success btn-sm" type="submit" id="saveOrderBtn">Reihenfolge & Active speichern</button>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-striped mb-0">
-        <thead>
-          <tr>
-            <th style="width:40px;"></th>
-            <th>opt_key</th>
-            <th>label</th>
-            <th>icon</th>
-            <th>value</th>
-            <th>unique</th>
-            <th>exclusive_group</th>
-            <th>special</th>
-            <th>active</th>
-            <th style="width:140px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="optTbody">
-        {% for o in options %}
-          <tr class="draggable" draggable="true" data-id="{{ o.id }}"
-              data-opt_key="{{ o.opt_key }}"
-              data-label="{{ o.label }}"
-              data-icon="{{ o.icon or '' }}"
-              data-value="{{ o.value or 1 }}"
-              data-unique="{{ 1 if o.unique_per_user else 0 }}"
-              data-exclusive="{{ o.exclusive_group or '' }}"
-              data-special="{{ 1 if o.is_special else 0 }}"
-              data-active="{{ 1 if o.active else 0 }}">
-            <td class="handle">☰</td>
-            <td class="mono">{{ o.opt_key }}</td>
-            <td>{{ o.label }}</td>
-            <td>{{ o.icon or '' }}</td>
-            <td>{{ o.value or 1 }}</td>
-            <td>{{ 1 if o.unique_per_user else 0 }}</td>
-            <td class="mono">{{ o.exclusive_group or '' }}</td>
-            <td>{{ 1 if o.is_special else 0 }}</td>
-            <td>
-              <input class="form-check-input" type="checkbox" name="active_{{ o.id }}" {% if o.active %}checked{% endif %}>
-            </td>
-            <td>
-              <button type="button" class="btn btn-outline-primary btn-sm editBtn">Edit</button>
-              <form method="post" class="d-inline">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id" value="{{ o.id }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm"
-                        onclick="return confirm('Option wirklich löschen?')">Delete</button>
-              </form>
-            </td>
-          </tr>
+{% block body %}
+<div class="content-card p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Contest auswählen</label>
+      <select class="form-select" name="year" onchange="this.form.submit()">
+        {% for c in contests %}
+          <option value="{{ c.id }}" {% if c.id == year %}selected{% endif %}>{{ contest_admin_label(c) }}</option>
         {% endfor %}
-        </tbody>
-      </table>
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-outline-primary" type="submit">Laden</button></div>
+  </form>
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+    <strong>Theme-Key-Erkennung</strong>
+    <span class="badge text-bg-light">Theme: {{ current_theme_id }}</span>
+    <span class="badge text-bg-light">Preset: {{ theme_preset_source }}</span>
+    {% if detected_theme_keys %}
+    <form method="post" class="ms-auto">
+      <input type="hidden" name="year" value="{{ year }}">
+      <button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="import_theme_defaults">Fehlende Theme-Keys importieren</button>
+    </form>
+    <form method="post">
+      <input type="hidden" name="year" value="{{ year }}">
+      <button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="sync_theme_defaults">Theme-Preset synchronisieren</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if detected_theme_keys %}
+    <div class="d-flex flex-wrap gap-2">
+      {% for k in detected_theme_keys %}
+        <span class="badge {% if k.exists %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+          {{ k.opt_key }}{% if k.label and k.label != k.opt_key %} ({{ k.label }}){% endif %} · {% if k.exists %}vorhanden{% else %}fehlt{% endif %}
+        </span>
+      {% endfor %}
+    </div>
+    <div class="small text-secondary mt-2">Laufzeit nutzt immer die Contest-Daten. Das Theme liefert nur Presets. `Importieren` ergänzt fehlende Keys, `Synchronisieren` aktualisiert bestehende Theme-Keys auf den Preset-Stand. Theme-Bilder aus `themes/&lt;theme_id&gt;/assets/` werden dabei in die Contest-Assets kopiert und können danach hier per Upload ersetzt werden.</div>
+  {% else %}
+    <div class="text-secondary small">Keine statischen Vote-Keys im Theme erkannt.</div>
+  {% endif %}
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+    <div>
+      <strong>Theme-Preset bearbeiten</strong>
+      <div class="small text-secondary mt-1">Hier bearbeitest du direkt die `vote_options.json` des aktuellen Themes. Icons und Theme-Bilder werden mitgespeichert; danach werden alle Contests mit diesem Theme automatisch synchronisiert.</div>
+    </div>
+    <span class="badge text-bg-light">Theme: {{ current_theme_id }}</span>
+  </div>
+
+  <form method="post" class="row g-2 mb-3" enctype="multipart/form-data">
+    <input type="hidden" name="action" value="theme_upsert">
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="theme_original_key" id="tf_original_key" value="0">
+    <div class="col-md-3"><input class="form-control mono" name="theme_opt_key" id="tf_opt_key" placeholder="opt_key" required></div>
+    <div class="col-md-2"><input class="form-control" name="theme_label" id="tf_label" placeholder="label" required></div>
+    <div class="col-md-2"><input class="form-control" name="theme_icon" id="tf_icon" placeholder="icon"></div>
+    <div class="col-md-2"><select class="form-select" name="theme_display_type" id="tf_display_type"><option value="icon">icon</option><option value="image">image</option></select></div>
+    <div class="col-md-3">
+      <input class="form-control" type="file" name="theme_image_file" id="tf_image_file" accept="image/*">
+      <input type="hidden" name="theme_current_image_filename" id="tf_current_image_filename" value="">
+      <div class="small text-secondary mt-1">Theme-Bild: <span id="tf_current_image_text">-</span></div>
+    </div>
+    <div class="col-md-2">
+      <input class="form-control" type="number" name="theme_value" id="tf_value" value="1" min="0">
+      <div class="small-note d-none" id="tf_value_auto_hint">All-in bleibt automatisch und wird später im Contest korrekt berechnet.</div>
+    </div>
+    <div class="col-md-8 d-flex gap-3 align-items-center">
+      <label><input type="checkbox" name="theme_unique_per_user" id="tf_unique"> unique_per_user</label>
+      <label><input type="checkbox" name="theme_all_in_only" id="tf_all_in_only"> All-in-Option</label>
+      <label><input type="checkbox" name="theme_active" id="tf_active" checked> active</label>
+    </div>
+    <div class="col-md-12 d-flex gap-2">
+      <button class="btn btn-outline-primary" type="submit">Theme-Preset speichern</button>
+      <button class="btn btn-outline-secondary" id="themeResetFormBtn" type="button">Reset</button>
     </div>
   </form>
 
+  {% if theme_vote_presets %}
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>key</th><th>label</th><th>display</th><th>image</th><th>value</th><th>unique</th><th>all-in</th><th>active</th><th>actions</th></tr></thead>
+      <tbody>
+      {% for o in theme_vote_presets %}
+      <tr data-theme-opt-key="{{ o.opt_key }}" data-theme-label="{{ o.label }}" data-theme-icon="{{ o.icon or '' }}" data-theme-display-type="{{ o.display_type or 'icon' }}" data-theme-image-filename="{{ o.image_filename or '' }}" data-theme-value="{{ o.value or 1 }}" data-theme-unique="{{ 1 if o.unique_per_user else 0 }}" data-theme-all-in="{{ 1 if (o.exclusive_group or '') == 'allin' else 0 }}" data-theme-active="{{ 1 if o.active else 0 }}">
+        <td class="mono">{{ o.opt_key }}</td>
+        <td>{{ o.label }}</td>
+        <td>{{ o.display_type or 'icon' }}</td>
+        <td>{{ o.image_filename or '' }}</td>
+        <td>{{ o.value or 1 }}</td>
+        <td>{% if o.unique_per_user %}yes{% else %}no{% endif %}</td>
+        <td>{% if (o.exclusive_group or '') == 'allin' %}yes{% else %}no{% endif %}</td>
+        <td>{% if o.active %}yes{% else %}no{% endif %}</td>
+        <td class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm themeEditBtn">Theme edit</button>
+          <form method="post" onsubmit="return confirm('Theme-Stimmoption wirklich löschen? Sie wird auch aus Contests mit diesem Theme entfernt.');">
+            <input type="hidden" name="action" value="theme_delete">
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="theme_opt_key" value="{{ o.opt_key }}">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Theme delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-secondary small">Noch keine Theme-Stimmoptionen vorhanden. Du kannst hier direkt neue anlegen; dabei wird `vote_options.json` automatisch erstellt.</div>
+  {% endif %}
 </div>
 
+<div class="content-card mb-3">
+  <div class="card-header">Option anlegen / bearbeiten</div>
+  <div class="card-body">
+    <div class="small text-secondary mb-3">Dieser Bereich bearbeitet nur den aktuell ausgewählten Contest. Änderungen hier sind Overrides für diesen Contest und ändern nicht automatisch das Theme-Preset.</div>
+    <form method="post" class="row g-2" id="optForm" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="upsert">
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="id" id="f_id" value="0">
+      <div class="col-md-3"><input class="form-control mono" name="opt_key" id="f_opt_key" placeholder="opt_key" required></div>
+      <div class="col-md-2"><input class="form-control" name="label" id="f_label" placeholder="label" required></div>
+      <div class="col-md-2"><input class="form-control" name="icon" id="f_icon" placeholder="icon"></div>
+      <div class="col-md-2"><select class="form-select" name="display_type" id="f_display_type"><option value="icon">icon</option><option value="image">image</option></select></div>
+      <div class="col-md-3">
+        <input class="form-control" type="file" name="image_file" id="f_image_file" accept="image/*">
+        <input type="hidden" name="current_image_filename" id="f_current_image_filename" value="">
+        <div class="small text-secondary mt-1">Aktuell: <span id="f_current_image_text">-</span></div>
+      </div>
+      <div class="col-md-2">
+        <input class="form-control" type="number" name="value" id="f_value" value="1" min="0">
+        <div class="small-note d-none" id="f_value_auto_hint">All-in wird automatisch berechnet: <strong id="f_value_auto_number">{{ all_in_auto_value }}</strong></div>
+      </div>
+      <div class="col-md-8 d-flex gap-3 align-items-center">
+        <label><input type="checkbox" name="unique_per_user" id="f_unique"> unique_per_user</label>
+        <label><input type="checkbox" name="all_in_only" id="f_all_in_only"> All-in-Option</label>
+        <label><input type="checkbox" name="active" id="f_active" checked> active</label>
+      </div>
+      <div class="col-md-2"><button class="btn btn-primary" type="submit">Speichern</button></div>
+      <div class="col-md-2"><button class="btn btn-outline-secondary" id="resetFormBtn" type="button">Reset</button></div>
+    </form>
+  </div>
+</div>
+
+<form method="post" class="content-card">
+  <div class="card-header d-flex align-items-center">
+    <div class="me-auto">Optionen</div>
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="order" id="orderField" value="">
+    <button class="btn btn-success btn-sm" type="submit" name="action" value="save_order">Order + Active speichern</button>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped mb-0"><thead><tr><th></th><th>key</th><th>label</th><th>display</th><th>image</th><th>value</th><th>unique</th><th>all-in</th><th>active</th><th>actions</th></tr></thead>
+    <tbody id="optTbody">
+    {% for o in options %}
+    <tr draggable="true" class="draggable" data-id="{{ o.id }}" data-opt_key="{{ o.opt_key }}" data-label="{{ o.label }}" data-icon="{{ o.icon or '' }}" data-display_type="{{ o.display_type or 'icon' }}" data-image_filename="{{ o.image_filename or '' }}" data-value="{{ o.value or 1 }}" data-unique="{{ 1 if o.unique_per_user else 0 }}" data-all-in="{{ 1 if (o.exclusive_group or '') == 'allin' else 0 }}" data-active="{{ 1 if o.active else 0 }}">
+      <td>::</td><td class="mono">{{ o.opt_key }}</td><td>{{ o.label }}</td><td>{{ o.display_type or 'icon' }}</td><td>{{ o.image_filename or '' }}</td><td>{% if (o.exclusive_group or '') == 'allin' or o.opt_key == 'all_in' %}auto: {{ all_in_auto_value }}{% else %}{{ o.value or 1 }}{% endif %}</td><td>{% if o.unique_per_user %}yes{% else %}no{% endif %}</td><td>{% if (o.exclusive_group or '') == 'allin' %}yes{% else %}no{% endif %}</td>
+      <td><input class="form-check-input" type="checkbox" name="active_{{ o.id }}" {% if o.active %}checked{% endif %}></td>
+      <td>
+        <button type="button" class="btn btn-outline-primary btn-sm editBtn">Edit</button>
+        <button class="btn btn-outline-danger btn-sm" type="submit" name="action" value="delete" onclick="document.getElementById('delete_id').value='{{ o.id }}'">Delete</button>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody></table>
+  </div>
+  <input type="hidden" id="delete_id" name="id" value="0">
+</form>
+{% endblock %}
+
+{% block scripts %}
 <script>
-  const tbody = document.getElementById('optTbody');
-  const orderField = document.getElementById('orderField');
-
-  function updateOrderField() {
-    const ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(tr => tr.dataset.id);
-    orderField.value = ids.join(',');
-  }
-  updateOrderField();
-
-  // Drag & Drop
-  let dragging = null;
-
-  tbody.addEventListener('dragstart', (e) => {
-    const tr = e.target.closest('tr.draggable');
-    if (!tr) return;
-    dragging = tr;
-    tr.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-  });
-
-  tbody.addEventListener('dragend', () => {
-    if (dragging) dragging.classList.remove('dragging');
-    dragging = null;
-    updateOrderField();
-  });
-
-  tbody.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    const after = getDragAfterElement(tbody, e.clientY);
-    const tr = dragging;
-    if (!tr) return;
-    if (after == null) {
-      tbody.appendChild(tr);
-    } else {
-      tbody.insertBefore(tr, after);
-    }
-  });
-
-  function getDragAfterElement(container, y) {
-    const els = [...container.querySelectorAll('tr.draggable:not(.dragging)')];
-    return els.reduce((closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { offset, element: child };
-      }
-      return closest;
-    }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
-  }
-
-  // Edit -> füllt das Form oben
-  const form = document.getElementById('optForm');
-  const resetBtn = document.getElementById('resetFormBtn');
-
-  function resetForm() {
-    document.getElementById('f_id').value = 0;
-    document.getElementById('f_opt_key').value = '';
-    document.getElementById('f_label').value = '';
-    document.getElementById('f_icon').value = '';
-    document.getElementById('f_value').value = 1;
-    document.getElementById('f_exclusive_group').value = '';
-    document.getElementById('f_unique').checked = false;
-    document.getElementById('f_special').checked = false;
-    document.getElementById('f_active').checked = true;
-  }
-
-  resetBtn.addEventListener('click', resetForm);
-
-  tbody.querySelectorAll('.editBtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tr = btn.closest('tr');
-      document.getElementById('f_id').value = tr.dataset.id;
-      document.getElementById('f_opt_key').value = tr.dataset.opt_key || '';
-      document.getElementById('f_label').value = tr.dataset.label || '';
-      document.getElementById('f_icon').value = tr.dataset.icon || '';
-      document.getElementById('f_value').value = tr.dataset.value || 1;
-      document.getElementById('f_exclusive_group').value = tr.dataset.exclusive || '';
-      document.getElementById('f_unique').checked = (tr.dataset.unique === '1');
-      document.getElementById('f_special').checked = (tr.dataset.special === '1');
-      document.getElementById('f_active').checked = (tr.dataset.active === '1');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  });
+const tbody=document.getElementById('optTbody'); const orderField=document.getElementById('orderField');
+const autoAllInValue={{ all_in_auto_value|int }};
+const valueInput=document.getElementById('f_value');
+const allInCheckbox=document.getElementById('f_all_in_only');
+const valueAutoHint=document.getElementById('f_value_auto_hint');
+const themeValueInput=document.getElementById('tf_value');
+const themeAllInCheckbox=document.getElementById('tf_all_in_only');
+const themeValueAutoHint=document.getElementById('tf_value_auto_hint');
+function updateOrderField(){orderField.value=[...tbody.querySelectorAll('tr[data-id]')].map(tr=>tr.dataset.id).join(',');}
+function syncValueField(){
+  const isAllIn=allInCheckbox.checked || (f_opt_key.value||'').trim().toLowerCase()==='all_in';
+  valueInput.readOnly=isAllIn;
+  valueInput.classList.toggle('muted-field',isAllIn);
+  valueAutoHint.classList.toggle('d-none',!isAllIn);
+  if(isAllIn){valueInput.value=autoAllInValue;}
+}
+function syncThemeValueField(){
+  const isAllIn=themeAllInCheckbox.checked || (tf_opt_key.value||'').trim().toLowerCase()==='all_in';
+  themeValueInput.readOnly=isAllIn;
+  themeValueInput.classList.toggle('muted-field',isAllIn);
+  themeValueAutoHint.classList.toggle('d-none',!isAllIn);
+  if(isAllIn){themeValueInput.value=500;}
+}
+updateOrderField();
+let dragging=null;
+tbody.addEventListener('dragstart',e=>{const tr=e.target.closest('tr.draggable'); if(!tr)return; dragging=tr; tr.classList.add('dragging');});
+tbody.addEventListener('dragend',()=>{if(dragging)dragging.classList.remove('dragging'); dragging=null;updateOrderField();});
+tbody.addEventListener('dragover',e=>{e.preventDefault(); const after=[...tbody.querySelectorAll('tr.draggable:not(.dragging)')].find(el=>e.clientY<el.getBoundingClientRect().top+el.getBoundingClientRect().height/2); if(!dragging)return; if(!after)tbody.appendChild(dragging); else tbody.insertBefore(dragging,after); updateOrderField();});
+const currentImageTextEl = document.getElementById('f_current_image_text');
+document.getElementById('resetFormBtn').addEventListener('click',()=>{f_id.value=0;f_opt_key.value='';f_label.value='';f_icon.value='';f_display_type.value='icon';f_current_image_filename.value='';currentImageTextEl.textContent='-';f_image_file.value='';f_value.value=1;f_unique.checked=false;f_all_in_only.checked=false;f_active.checked=true;syncValueField();});
+for(const btn of document.querySelectorAll('.editBtn')){btn.addEventListener('click',()=>{const tr=btn.closest('tr');f_id.value=tr.dataset.id;f_opt_key.value=tr.dataset.opt_key;f_label.value=tr.dataset.label;f_icon.value=tr.dataset.icon;f_display_type.value=tr.dataset.display_type;f_current_image_filename.value=tr.dataset.image_filename||'';currentImageTextEl.textContent=tr.dataset.image_filename||'-';f_image_file.value='';f_value.value=tr.dataset.value;f_unique.checked=tr.dataset.unique==='1';f_all_in_only.checked=tr.dataset.allIn==='1';f_active.checked=tr.dataset.active==='1';syncValueField();window.scrollTo({top:0,behavior:'smooth'});});}
+const currentThemeImageTextEl = document.getElementById('tf_current_image_text');
+document.getElementById('themeResetFormBtn').addEventListener('click',()=>{tf_original_key.value='';tf_opt_key.value='';tf_label.value='';tf_icon.value='';tf_display_type.value='icon';tf_current_image_filename.value='';currentThemeImageTextEl.textContent='-';tf_image_file.value='';tf_value.value=1;tf_unique.checked=false;tf_all_in_only.checked=false;tf_active.checked=true;syncThemeValueField();});
+for(const btn of document.querySelectorAll('.themeEditBtn')){btn.addEventListener('click',()=>{const tr=btn.closest('tr');tf_original_key.value=tr.dataset.themeOptKey;tf_opt_key.value=tr.dataset.themeOptKey;tf_label.value=tr.dataset.themeLabel;tf_icon.value=tr.dataset.themeIcon;tf_display_type.value=tr.dataset.themeDisplayType;tf_current_image_filename.value=tr.dataset.themeImageFilename||'';currentThemeImageTextEl.textContent=tr.dataset.themeImageFilename||'-';tf_image_file.value='';tf_value.value=tr.dataset.themeValue;tf_unique.checked=tr.dataset.themeUnique==='1';tf_all_in_only.checked=tr.dataset.themeAllIn==='1';tf_active.checked=tr.dataset.themeActive==='1';syncThemeValueField();window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});});}
+f_opt_key.addEventListener('input',syncValueField);
+allInCheckbox.addEventListener('change',syncValueField);
+tf_opt_key.addEventListener('input',syncThemeValueField);
+themeAllInCheckbox.addEventListener('change',syncThemeValueField);
+syncValueField();
+syncThemeValueField();
 </script>
-
-</body>
-</html>
+{% endblock %}

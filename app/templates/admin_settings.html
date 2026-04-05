@@ -1,83 +1,398 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Contest Settings</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body{background:#0f1220;color:#ecf0ff}
-    .panel{background:#171b2f;border:1px solid #2d3559;border-radius:14px}
-    .muted{color:#9fa9d9}
-  </style>
-</head>
-<body>
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
+{% extends "base_admin.html" %}
+{% set section = 'settings' %}
+{% set year = active_id %}
+
+{% block title %}Contest Settings{% endblock %}
+{% block page_title %}Contest Settings{% endblock %}
+{% block page_subtitle %}Lege neue Contests an, halte öffentliche URLs sauber und verwalte pro Contest die wichtigsten Eckdaten, ohne zwischen mehreren Admin-Seiten springen zu müssen.{% endblock %}
+
+{% block head_extra %}
+<style>
+.workflow-card{background:linear-gradient(135deg,#eff4ff,#f8fbff);border:1px solid #dce6ff;border-radius:16px;padding:14px 16px}
+.workflow-step{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #dce6ff;color:#41507e;font-size:.9rem}
+.form-label{font-weight:600;color:#32405f}
+.contest-card{border-top:4px solid #dce6ff}
+.contest-card.is-active{border-top-color:#27a46d}
+.meta-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#f4f7ff;border:1px solid #dde5fa;color:#4c5f8f;font-size:.85rem}
+.url-box{background:#f8faff;border:1px solid #e1e8fb;border-radius:12px;padding:10px 12px}
+.url-box a{text-decoration:none}
+.section-title{font-size:.92rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7382ab}
+.backup-list{display:grid;gap:10px}
+.backup-item{border:1px solid #e1e8fb;border-radius:12px;padding:10px 12px;background:#fbfcff}
+.help-trigger{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid #cfdaf6;background:#fff;color:#496199;font-weight:700;cursor:pointer;text-decoration:none}
+.help-box{display:none;border:1px solid #dbe5ff;border-radius:12px;padding:12px;background:#f7faff}
+.help-box.show{display:block}
+.help-box ol{margin:0;padding-left:1.1rem}
+.help-box li+li{margin-top:6px}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="workflow-card mb-3 d-flex flex-wrap gap-2">
+  <span class="workflow-step">1. Contest anlegen</span>
+  <span class="workflow-step">2. Aktiv setzen</span>
+  <span class="workflow-step">3. Stimmoptionen und Kategorien pflegen</span>
+  <span class="workflow-step">4. Bilder hochladen</span>
+  <span class="workflow-step">5. Ergebnisse veröffentlichen</span>
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
     <div>
-      <h1 class="h3 mb-1">Contest Settings</h1>
-      <p class="muted mb-0">Steuert aktives Jahr, Legacy-Navigation und Voting-Timer.</p>
+      <div class="section-title mb-2">Globale Freigabe</div>
+      <div class="text-secondary small">Bestimmt, ob unveröffentlichte Ergebnis-Seiten generell gesperrt bleiben sollen.</div>
     </div>
-      <div class="d-flex gap-2">
-      <a href="{{ url_for('main.admin_vote_options', year=settings.get('current_contest_year')) }}" class="btn btn-outline-primary btn-sm">
-        Vote Options
-      </a>
-
-      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.upload') }}">Upload Board</a>
-      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_stickers', year=settings.current_contest_year) }}">Sticker Admin</a>
-      <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.contest_year', year=settings.current_contest_year) }}">Live Seite</a>
-    </div>
+    <form method="post" class="d-flex flex-column align-items-start gap-2">
+      <input type="hidden" name="action" value="toggle_block_all">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="blockAll" name="block_public_unpublished_all_contests" {% if block_all %}checked{% endif %}>
+        <label class="form-check-label" for="blockAll">Unveröffentlichte öffentliche Ergebnisse für alle Contests blockieren</label>
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit">Speichern</button>
+    </form>
   </div>
-  <form method="POST" class="panel p-3">
-      <div class="form-check mt-3">
-      <input class="form-check-input" type="checkbox" id="block_all" name="block_public_unpublished_all_years"
-            {% if settings.get('block_public_unpublished_all_years') %}checked{% endif %}>
-      <label class="form-check-label" for="block_all">
-        Testmodus: Unveröffentlichte Ergebnisse für alle Jahre blockieren
-      </label>
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+    <div>
+      <div class="section-title mb-2">Backups</div>
+      <div class="text-secondary small">Manuelle Backups bleiben verfügbar. Zusätzlich erstellt die App nach Contest-Ende automatisch genau ein Backup pro Contest. Beim Restore wird vorher automatisch noch ein Sicherheits-Backup erstellt.</div>
     </div>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label">Aktuelles Contest-Jahr</label>
-        <input type="number" class="form-control" name="current_contest_year" value="{{ settings.current_contest_year }}" required>
-      </div>
+    <form method="post">
+      <input type="hidden" name="action" value="create_backup">
+      <button class="btn btn-outline-primary btn-sm" type="submit">Backup jetzt erstellen</button>
+    </form>
+  </div>
 
-      <div class="col-md-8">
-        <label class="form-label">Legacy-Jahre (kommagetrennt)</label>
-        <input type="text" class="form-control" name="legacy_years" value="{{ settings.legacy_years | join(',') }}" placeholder="z.B. 2025,2024">
+  <div class="backup-item mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <div class="fw-semibold mb-0">Google Drive</div>
+      <button type="button" class="help-trigger" onclick="toggleDriveHelp()" aria-label="Google-Drive-Hilfe anzeigen">?</button>
+    </div>
+    <div class="small text-secondary mb-3">Verbinde die App per Google OAuth. Beim ersten Verbinden wird automatisch der Standardordner <span class="mono">Photo Voting Contest Backups</span> in deinem Google Drive angelegt oder wiederverwendet.</div>
+    <div id="driveHelpBox" class="help-box mb-3">
+      <div class="fw-semibold mb-2">Self-Hosted Setup</div>
+      <ol class="small text-secondary">
+        <li>In Google Cloud ein Projekt anlegen und die <span class="mono">Google Drive API</span> aktivieren.</li>
+        <li>Unter <span class="mono">OAuth consent screen</span> eine App anlegen und dich bei Bedarf als Test-User hinzufügen.</li>
+        <li>Unter <span class="mono">Credentials</span> einen <span class="mono">OAuth Client ID</span> vom Typ <span class="mono">Web application</span> anlegen.</li>
+        <li>Als Redirect-URI diese URL eintragen: <span class="mono">{{ url_for('main.google_drive_oauth_callback', _external=True) }}</span></li>
+        <li>Optional als JavaScript-Origin die Basis-URL deiner Instanz eintragen, z. B. <span class="mono">{{ request.url_root.rstrip('/') }}</span></li>
+        <li>Client-ID und Client-Secret hier speichern und danach auf <span class="mono">Mit Google Drive verbinden</span> klicken.</li>
+        <li>Nach der Freigabe legt die App automatisch den Ordner <span class="mono">Photo Voting Contest Backups</span> in deinem Drive an oder nutzt den vorhandenen.</li>
+      </ol>
+    </div>
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="save_google_drive">
+      <div class="col-md-5">
+        <label class="form-label">Google OAuth Client-ID</label>
+        <input class="form-control mono" name="google_drive_client_id" value="{{ google_drive_client_id or '' }}" placeholder="...apps.googleusercontent.com">
       </div>
-
-      <div class="col-md-6">
-        <label class="form-label">Voting endet am (ISO Local)</label>
-        <input type="text" class="form-control" name="voting_end_at" value="{{ settings.voting_end_at }}" placeholder="2026-12-31T23:59:59">
+      <div class="col-md-5">
+        <label class="form-label">Google OAuth Client Secret</label>
+        <input class="form-control mono" name="google_drive_client_secret" value="{{ google_drive_client_secret or '' }}" placeholder="GOCSPX-...">
       </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-outline-dark btn-sm" type="submit">OAuth speichern</button>
+      </div>
+    </form>
+    <div class="d-flex gap-2 flex-wrap mt-3">
+      <a class="btn btn-outline-primary btn-sm {% if not google_drive_configured %}disabled{% endif %}" href="{{ url_for('main.google_drive_oauth_connect') }}">Mit Google Drive verbinden</a>
+      {% if google_drive_connected %}
+      <form method="post">
+        <input type="hidden" name="action" value="disconnect_google_drive">
+        <button class="btn btn-outline-danger btn-sm" type="submit">Google Drive trennen</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="small mt-2 {% if google_drive_connected %}text-success{% else %}text-secondary{% endif %}">
+      {% if google_drive_connected %}
+      Verbunden als {{ google_drive_connected_email or 'Google-Account' }}{% if google_drive_folder_id %} · Standardordner aktiv{% endif %}.
+      {% else %}
+      Google Drive ist aktuell noch nicht verbunden.
+      {% endif %}
+    </div>
+    {% if google_drive_error %}
+    <div class="small text-danger mt-1">{{ google_drive_error }}</div>
+    {% endif %}
+  </div>
 
-      <div class="col-md-6 d-flex align-items-end">
-        <div class="alert alert-secondary w-100 mb-0">
-          Tipp: Nach Speichern keine Code-Änderung nötig – die Runtime Settings greifen sofort.
+  {% if backups %}
+  <div class="backup-list">
+    {% for backup in backups %}
+    <div class="backup-item d-flex justify-content-between align-items-center gap-3 flex-wrap">
+      <div>
+        <div class="fw-semibold mono">{{ backup.filename }}</div>
+        <div class="small text-secondary">
+          {{ backup.modified_at.strftime('%d.%m.%Y %H:%M:%S') }} · {{ ((backup.size / 1024) | round(1)) }} KB
         </div>
       </div>
-    </div>
-
-    <hr class="my-4" />
-    <h2 class="h5 mb-3">Public Waiting Text pro Jahr</h2>
-    <div class="row g-3">
-      {% for y in available_years %}
-      <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-          <label class="form-label mb-1">Waiting Text {{ y }}</label>
-          <a class="btn btn-outline-info btn-sm" target="_blank" href="{{ url_for('main.public_waiting_preview', year=y) }}">Preview {{ y }}</a>
-        </div>
-        <textarea class="form-control" name="waiting_text_{{ y }}" rows="2" placeholder="Text für Public Waiting {{ y }}">{{ waiting_texts[y|string] }}</textarea>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.download_backup', filename=backup.filename) }}">Backup herunterladen</a>
+        {% if google_drive_connected %}
+        <form method="post">
+          <input type="hidden" name="action" value="upload_backup_to_drive">
+          <input type="hidden" name="backup_name" value="{{ backup.filename }}">
+          <button class="btn btn-outline-primary btn-sm" type="submit">Zu Google Drive</button>
+        </form>
+        {% endif %}
+        <form method="post" onsubmit="return confirm('Backup wirklich wiederherstellen? Vorher wird automatisch ein Sicherheits-Backup erstellt.');">
+          <input type="hidden" name="action" value="restore_backup">
+          <input type="hidden" name="backup_name" value="{{ backup.filename }}">
+          <button class="btn btn-outline-danger btn-sm" type="submit">Dieses Backup wiederherstellen</button>
+        </form>
       </div>
-      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-secondary small">Noch keine Backups vorhanden.</div>
+  {% endif %}
+
+  {% if google_drive_backups %}
+  <div class="section-title mt-4 mb-2">Google Drive Backups</div>
+  <div class="backup-list">
+    {% for backup in google_drive_backups %}
+    <div class="backup-item d-flex justify-content-between align-items-center gap-3 flex-wrap">
+      <div>
+        <div class="fw-semibold mono">{{ backup.filename }}</div>
+        <div class="small text-secondary">
+          {% if backup.modified_at %}{{ backup.modified_at.strftime('%d.%m.%Y %H:%M:%S') }} · {% endif %}{{ ((backup.size / 1024) | round(1)) }} KB
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <form method="post">
+          <input type="hidden" name="action" value="download_drive_backup">
+          <input type="hidden" name="drive_file_id" value="{{ backup.id }}">
+          <input type="hidden" name="backup_name" value="{{ backup.filename }}">
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Von Drive herunterladen</button>
+        </form>
+        <form method="post" onsubmit="return confirm('Google-Drive-Backup wirklich herunterladen und wiederherstellen? Vorher wird automatisch ein Sicherheits-Backup erstellt.');">
+          <input type="hidden" name="action" value="restore_drive_backup">
+          <input type="hidden" name="drive_file_id" value="{{ backup.id }}">
+          <input type="hidden" name="backup_name" value="{{ backup.filename }}">
+          <button class="btn btn-outline-danger btn-sm" type="submit">Von Drive wiederherstellen</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="section-title mb-3">Neuen Contest anlegen</div>
+  <form method="post" class="row g-3">
+    <input type="hidden" name="action" value="create_contest">
+
+    <div class="col-md-4">
+      <label class="form-label">Titel</label>
+      <input class="form-control" name="title" placeholder="z. B. Lan Vegas und Minhto Carlo" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Öffentlicher Slug</label>
+      <input class="form-control" name="slug" placeholder="leer lassen für automatische URL">
+      <div class="small text-secondary mt-1">Wird standardmäßig aus Startdatum und Titel erzeugt.</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Storage Key</label>
+      <input class="form-control" name="storage_key" placeholder="leer lassen für automatische Ablage">
+      <div class="small text-secondary mt-1">Nur für Dateien und Assets. Kann unabhängig vom öffentlichen Slug bleiben.</div>
     </div>
 
-    <div class="mt-3 d-flex gap-2">
-      <button class="btn btn-primary" type="submit">Speichern</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('main.upload') }}">Zurück</a>
+    <div class="col-md-3">
+      <label class="form-label">Start</label>
+      <input class="form-control" name="start_at" placeholder="2026-04-11T00:00:00">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Ende</label>
+      <input class="form-control" name="end_at" placeholder="2026-04-20T23:59:59">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Modus</label>
+      <select class="form-select" name="vote_mode">
+        {% for m in vote_modes %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Max. Stimmen</label>
+      <input type="number" class="form-control" name="max_actions" value="1" min="1">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Stimmen-Name</label>
+      <input class="form-control" name="unit_name" value="Stimme">
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Icon</label>
+      <input class="form-control" name="unit_icon" value="*">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Theme</label>
+      <select class="form-select" name="theme_id">
+        {% for t in theme_options %}
+        <option value="{{ t }}" {% if t == 'default' %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Waiting-Text</label>
+      <input class="form-control" name="waiting_text" placeholder="Text für unveröffentlichte oder gesperrte Ergebnisse">
+    </div>
+
+    <div class="col-12">
+      <button class="btn btn-success" type="submit">Contest erstellen</button>
     </div>
   </form>
 </div>
-</body>
-</html>
+
+{% for c in contests %}
+<form method="post" class="content-card contest-card {% if active_id == c.id %}is-active{% endif %} p-3 mb-3">
+  <input type="hidden" name="contest_id" value="{{ c.id }}">
+  {% set display_year = contest_display_year(c) %}
+  {% set start_date = contest_start_date(c) %}
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+    <div>
+      <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
+        <strong class="fs-5">{{ c.title }}</strong>
+        {% if active_id == c.id %}<span class="badge text-bg-success">Aktiv</span>{% endif %}
+        <span class="meta-pill">Jahr {{ display_year }}</span>
+        {% if start_date %}<span class="meta-pill">Start {{ start_date }}</span>{% endif %}
+        {% if c.id|string != display_year %}<span class="meta-pill">Interne ID {{ c.id }}</span>{% endif %}
+      </div>
+      <div class="text-secondary small">Öffentliche Links laufen über den Slug. Die interne ID bleibt nur technisch intern.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ contest_public_url(c) }}" target="_blank">Öffentliche Abstimmung</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ contest_results_url(c) }}" target="_blank">Öffentliche Ergebnisse</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ contest_waiting_url(c) }}" target="_blank">Waiting</a>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_vote_options', contest_id=c.id) }}">Stimmoptionen</a>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_categories', contest_id=c.id) }}">Kategorien</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.admin_stickers', contest_id=c.id) }}">Sticker</a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Titel</label>
+      <input class="form-control" name="title" value="{{ c.title }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Öffentlicher Slug</label>
+      <input class="form-control mono" name="slug" value="{{ c.slug or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Start</label>
+      <input class="form-control" name="start_at" value="{{ c.start_at or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Ende</label>
+      <input class="form-control" name="end_at" value="{{ c.end_at or '' }}">
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Max. Stimmen</label>
+      <input class="form-control" type="number" name="max_actions" value="{{ c.max_actions or 1 }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Modus</label>
+      <select class="form-select" name="vote_mode">
+        {% for m in vote_modes %}<option value="{{ m }}" {% if c.vote_mode == m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Stimmen-Name</label>
+      <input class="form-control" name="unit_name" value="{{ c.unit_name or '' }}">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label">Icon</label>
+      <input class="form-control" name="unit_icon" value="{{ c.unit_icon or '' }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Theme</label>
+      <select class="form-select" name="theme_id">
+        {% for t in theme_options %}
+        <option value="{{ t }}" {% if (c.theme_id or 'default') == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Storage Key</label>
+      <input class="form-control mono" name="storage_key" value="{{ c.storage_key or '' }}">
+    </div>
+    <div class="col-md-12">
+      <label class="form-label">Waiting-Text</label>
+      <input class="form-control" name="waiting_text" value="{{ c.waiting_text or '' }}">
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-lg-7">
+      <div class="url-box">
+        <div class="small text-secondary mb-1">Öffentliche URLs</div>
+        <div class="small mono">Abstimmung: <a href="{{ contest_public_url(c) }}" target="_blank">{{ contest_public_url(c) }}</a></div>
+        <div class="small mono mt-1">Ergebnisse: <a href="{{ contest_results_url(c) }}" target="_blank">{{ contest_results_url(c) }}</a></div>
+        <div class="small mono mt-1">Waiting: <a href="{{ contest_waiting_url(c) }}" target="_blank">{{ contest_waiting_url(c) }}</a></div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="url-box">
+        <div class="small text-secondary mb-2">Theme Preview</div>
+        <div class="d-flex gap-2 flex-wrap">
+          <select class="form-select form-select-sm" id="preview_theme_{{ c.id }}" style="width:auto;min-width:180px;">
+            {% for t in theme_options %}
+            <option value="{{ t }}" {% if (c.theme_id or 'default') == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline-dark btn-sm" type="button" onclick="openThemePreview({{ c.id }}, '{{ c.slug or ('contest-' ~ c.id) }}', 'vote')">Vote</button>
+          <button class="btn btn-outline-dark btn-sm" type="button" onclick="openThemePreview({{ c.id }}, '{{ c.slug or ('contest-' ~ c.id) }}', 'results')">Results</button>
+          <button class="btn btn-outline-dark btn-sm" type="button" onclick="openThemePreview({{ c.id }}, '{{ c.slug or ('contest-' ~ c.id) }}', 'waiting')">Waiting</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap mt-3">
+    <button class="btn btn-primary btn-sm" type="submit" name="action" value="save_contest">Speichern</button>
+    <button class="btn btn-outline-success btn-sm" type="submit" name="action" value="set_active">Als aktiv setzen</button>
+    <button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="clone_contest">Contest klonen</button>
+    <button
+      class="btn btn-outline-danger btn-sm"
+      type="submit"
+      name="action"
+      value="delete_contest"
+      {% if active_id == c.id %}disabled title="Aktiven Contest erst umschalten"{% endif %}
+      onclick="return confirm('Contest wirklich löschen? Alle Bilder, Stimmen, Kategorien und Einstellungen dieses Contests werden entfernt.');"
+    >
+      Contest löschen
+    </button>
+  </div>
+</form>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleDriveHelp() {
+  const box = document.getElementById('driveHelpBox');
+  if (!box) return;
+  box.classList.toggle('show');
+}
+
+function openThemePreview(contestId, contestSlug, targetKind) {
+  const safeSlug = String(contestSlug || '').trim();
+  const sel = document.getElementById(`preview_theme_${contestId}`);
+  const theme = sel ? sel.value : 'default';
+  if (targetKind === 'results') {
+    window.open(`/public-results/${safeSlug}?theme_preview=${encodeURIComponent(theme)}&preview=1`, '_blank');
+    return;
+  }
+  if (targetKind === 'waiting') {
+    window.open(`/public-waiting/${safeSlug}?theme_preview=${encodeURIComponent(theme)}&preview=1`, '_blank');
+    return;
+  }
+  window.open(`/contest/${safeSlug}?theme_preview=${encodeURIComponent(theme)}&preview=1`, '_blank');
+}
+</script>
+{% endblock %}

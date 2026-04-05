@@ -1,0 +1,53 @@
+[
+  {
+    "opt_key": "chip_100",
+    "label": "100",
+    "icon": "",
+    "display_type": "icon",
+    "value": 100,
+    "unique_per_user": 1,
+    "active": true,
+    "sort_order": 10
+  },
+  {
+    "opt_key": "chip_50",
+    "label": "50",
+    "icon": "",
+    "display_type": "icon",
+    "value": 50,
+    "unique_per_user": 1,
+    "active": true,
+    "sort_order": 20
+  },
+  {
+    "opt_key": "chip_25",
+    "label": "25",
+    "icon": "",
+    "display_type": "icon",
+    "value": 25,
+    "unique_per_user": 1,
+    "active": true,
+    "sort_order": 30
+  },
+  {
+    "opt_key": "chip_5",
+    "label": "5",
+    "icon": "",
+    "display_type": "icon",
+    "value": 5,
+    "unique_per_user": 1,
+    "active": true,
+    "sort_order": 40
+  },
+  {
+    "opt_key": "all_in",
+    "label": "ALL-IN",
+    "icon": "",
+    "display_type": "icon",
+    "value": 500,
+    "unique_per_user": 1,
+    "exclusive_group": "allin",
+    "active": true,
+    "sort_order": 50
+  }
+]

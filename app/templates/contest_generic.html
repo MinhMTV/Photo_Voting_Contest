@@ -1,0 +1,137 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ contest.title }} - Voting</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#0f1220; color:#e8ecff; }
+    .cardx { background:#171b2f; border:1px solid #2d3559; border-radius:14px; }
+    .img-wrap img { width:100%; height:220px; object-fit:cover; border-radius:10px; }
+    .vote-btn.active { outline:2px solid #78e08f; }
+    .muted { color:#9fa9d9; }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+    <div>
+      <h1 class="h4 mb-1">{{ contest.title }}</h1>
+      <div class="muted">Saison {{ contest_display_year(contest) }} · Modus: {{ year_cfg.vote_mode }} · Max: {{ year_cfg.max_actions }} {{ year_cfg.unit_name }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.archive') }}">Archiv</a>
+      <a class="btn btn-outline-warning btn-sm" href="{{ contest_results_url(contest) }}">Ergebnisse</a>
+      <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.login') }}">Admin</a>
+    </div>
+  </div>
+
+  <div class="cardx p-3 mb-3">
+    <div class="mb-2">Verbleibend: <strong id="votesLeft">{{ votes_left }}</strong></div>
+    <div class="d-flex flex-wrap gap-2" id="optionBar">
+      {% for opt in vote_options %}
+      <button type="button" class="btn btn-sm btn-outline-light vote-btn" data-key="{{ opt.opt_key }}">
+        {% if opt.display_type == 'image' and opt.image_filename %}
+          <img src="{{ url_for('main.asset_year', year=year, filename=opt.image_filename) }}" alt="{{ opt.label }}" style="height:18px; width:18px; object-fit:cover; border-radius:4px;">
+        {% else %}
+          {{ opt.icon or '' }}
+        {% endif %}
+        {{ opt.label }}
+      </button>
+      {% endfor %}
+      <button class="btn btn-sm btn-outline-danger" id="resetVotesBtn">Stimmen zurücksetzen</button>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for image in images %}
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="cardx p-3 h-100">
+        <div class="img-wrap mb-2" data-image-id="{{ image.id }}">
+          <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" alt="Bild">
+        </div>
+        <div class="fw-semibold">{{ image.uploader or 'Anonymous' }}</div>
+        <div class="small muted mb-2">{{ image.description or '' }}</div>
+
+        <div class="d-flex flex-wrap gap-2">
+          {% for r in reaction_options %}
+          <button class="btn btn-sm btn-outline-secondary reaction-btn {% if r.reaction_key in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="{{ r.reaction_key }}">
+            {% if r.display_type == 'image' and r.image_filename %}
+              <img src="{{ url_for('main.asset_year', year=year, filename=r.image_filename) }}" style="height:16px;width:16px;object-fit:cover;border-radius:3px;">
+            {% else %}
+              {{ r.icon or '' }}
+            {% endif %}
+            {{ r.label }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
+<script>
+const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
+localStorage.setItem('voter_session_id', voterSessionId);
+document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
+
+let selectedKey = "{{ (vote_options[0].opt_key if vote_options else '') }}";
+let maxVotes = Number("{{ year_cfg.max_actions }}") || 1;
+
+function setActiveOption(key){
+  selectedKey = key;
+  document.querySelectorAll('.vote-btn[data-key]').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+}
+
+document.querySelectorAll('.vote-btn[data-key]').forEach(btn => btn.addEventListener('click', () => setActiveOption(btn.dataset.key)));
+setActiveOption(selectedKey);
+
+async function syncState(){
+  const r = await fetch(`/api/voter-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
+  const s = await r.json();
+  document.getElementById('votesLeft').textContent = s.votes_left ?? 0;
+}
+
+for (const card of document.querySelectorAll('.img-wrap[data-image-id]')){
+  card.addEventListener('click', async () => {
+    if (!selectedKey) return;
+    const imageId = card.dataset.imageId;
+    const r = await fetch(`/vote/${imageId}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({voter_session_id:voterSessionId, contest_year:{{ year }}, vote_option_key:selectedKey})
+    });
+    const d = await r.json();
+    if (!d.success) { alert(d.error || 'Fehler'); return; }
+    await syncState();
+  });
+}
+
+for (const btn of document.querySelectorAll('.reaction-btn')){
+  btn.addEventListener('click', async () => {
+    const r = await fetch(`/react/${btn.dataset.imageId}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({voter_session_id:voterSessionId, contest_year:{{ year }}, reaction_type:btn.dataset.reaction})
+    });
+    const d = await r.json();
+    if (!d.success) { alert(d.error || 'Fehler'); return; }
+    btn.classList.toggle('active', !!d.active);
+  });
+}
+
+document.getElementById('resetVotesBtn').addEventListener('click', async () => {
+  const r = await fetch(`/api/reset-votes/{{ year }}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({voter_session_id:voterSessionId})
+  });
+  const d = await r.json();
+  if (d.success) syncState();
+});
+
+syncState();
+</script>
+</body>
+</html>
+

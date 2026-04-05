@@ -19,25 +19,25 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h1 class="h3 mb-1">Admin Upload Board</h1>
-            <div class="muted">Aktuelles Contest-Jahr: <strong>{{ current_year }}</strong></div>
+            <div class="muted">Aktiver Contest: <strong>{{ contest_admin_label(current_contest) }}</strong></div>
         </div>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-info btn-sm" href="{{ url_for('main.admin_settings') }}">Contest Settings</a>
-            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_stickers', year=current_year) }}">Sticker Admin</a>
-            <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.contest_year', year=current_year) }}">Zur Galerie</a>
-            <a class="btn btn-outline-warning btn-sm" href="{{ url_for('main.results') }}">Ranking</a>
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.admin_stickers', contest_id=year) }}">Sticker Admin</a>
+            <a class="btn btn-outline-light btn-sm" href="{{ contest_public_url(current_contest) }}">Zur Galerie</a>
+            <a class="btn btn-outline-warning btn-sm" href="{{ url_for('main.results', contest_id=year) }}">Ranking</a>
             <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.logout') }}">Logout</a>
         </div>
     </div>
 
-        <div class="d-flex gap-2 align-items-center mb-3">
-            {% for y in available_years %}
-                <a class="btn btn-outline-light btn-sm {% if y == year %}active{% endif %}"
-                href="{{ url_for('main.upload', year=y) }}">
-                {{ y }}
+        <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+            {% for c in contests %}
+                <a class="btn btn-outline-light btn-sm {% if c.id == year %}active{% endif %}"
+                href="{{ url_for('main.upload', contest_id=c.id) }}">
+                {{ contest_admin_label(c) }}
                 </a>
             {% endfor %}
-            </div>
+        </div>
 
 
 
@@ -48,9 +48,22 @@
                 <input type="file" class="form-control" id="files" name="files" multiple accept="image/*" required>
             </div>
             <div class="col-md-3 d-grid">
-                <button type="submit" class="btn btn-primary">Bilder hochladen ({{ year }})</button>
+                <button type="submit" class="btn btn-primary">Bilder hochladen</button>
             </div>
         </form>
+    </div>
+
+    <div class="panel p-3 mb-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <div>
+                <div class="fw-semibold text-warning">Stimmen und Reaktionen für diesen Contest zurücksetzen</div>
+                <div class="small muted">Löscht Stimmen, Reaktionen und Duell-Stimmen des aktuell ausgewählten Contests.</div>
+            </div>
+            <form method="POST" action="{{ url_for('main.reset_year_votes_admin') }}" onsubmit="return confirm('Wirklich alle Stimmen und Reaktionen für diesen Contest löschen?');">
+                <input type="hidden" name="year" value="{{ year }}">
+                <button type="submit" class="btn btn-outline-warning btn-sm">Aktuellen Contest zurücksetzen</button>
+            </form>
+        </div>
     </div>
 
     <form method="POST" action="{{ url_for('main.update_images') }}" class="panel">
@@ -69,14 +82,26 @@
                         <label class="form-label mb-1">Beschreibung</label>
                         <input type="text" class="form-control form-control-sm" name="description_{{ image.id }}" value="{{ image.description or '' }}">
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label mb-1">Jahr</label>
-                        <input type="text" class="form-control form-control-sm" value="{{ image.contest_year or '' }}" disabled>
-                    </div>
                     <div class="col-md-1 d-flex align-items-end">
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" name="visible_{{ image.id }}" id="visible_{{ image.id }}" {% if image.visible %}checked{% endif %}>
                             <label class="form-check-label" for="visible_{{ image.id }}">On</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_in_main_results_{{ image.id }}" id="include_in_main_results_{{ image.id }}" {% if not image.exclude_from_results %}checked{% endif %}>
+                            <label class="form-check-label" for="include_in_main_results_{{ image.id }}">
+                                Im Haupt-Ranking mitzählen
+                            </label>
+                            <div class="small muted">Wenn aus: Bild bleibt sichtbar und votebar, erscheint aber nicht in der offiziellen Gesamtplatzierung.</div>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" name="include_in_category_results_{{ image.id }}" id="include_in_category_results_{{ image.id }}" {% if image.include_in_category_results %}checked{% endif %}>
+                            <label class="form-check-label" for="include_in_category_results_{{ image.id }}">
+                                In Kategorien-Rankings mitzählen
+                            </label>
+                            <div class="small muted">Wenn aus: Das Bild kann im Haupt-Ranking auftauchen, wird aber aus den einzelnen Kategorienwertungen herausgehalten.</div>
                         </div>
                     </div>
                 </div>

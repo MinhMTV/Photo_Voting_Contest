@@ -1,0 +1,101 @@
+﻿{% extends "base_admin.html" %}
+{% set section = 'themes' %}
+{% set year = active_id %}
+
+{% block title %}Theme Management{% endblock %}
+{% block page_title %}Theme Management{% endblock %}
+{% block page_subtitle %}Überblick über alle vorhandenen Themes, deren Preset-Dateien und eine direkte Zuordnung pro Contest.{% endblock %}
+
+{% block head_extra %}
+<style>
+.theme-card{border:1px solid #e3e8f7;border-radius:16px;background:linear-gradient(180deg,#fff,#f9fbff);box-shadow:0 10px 24px rgba(39,57,120,.05)}
+.theme-meta{font-size:.9rem;color:#5a688f}
+.assign-row{border:1px solid #e6ebfa;border-radius:14px;background:#fbfcff}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="alert alert-info py-2">
+  Hier siehst du alle verfügbaren Themes und kannst sie direkt einem Contest zuweisen.
+</div>
+
+<div class="content-card p-3 mb-3">
+  <h6 class="mb-3">Theme-Katalog</h6>
+  <div class="row g-3">
+    {% for t in themes %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="theme-card p-3 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <strong class="mono">{{ t.id }}</strong>
+          <span class="badge text-bg-light">{{ t.description }}</span>
+        </div>
+        <div class="theme-meta">Vorhandene Templates und Presets</div>
+        <div class="small mt-2">
+          contest: {% if t.has_contest %}ja{% else %}nein{% endif %}<br>
+          results: {% if t.has_results %}ja{% else %}nein{% endif %}<br>
+          waiting: {% if t.has_waiting %}ja{% else %}nein{% endif %}<br>
+          vote_options.json: {% if t.has_vote_options %}ja{% else %}nein{% endif %}<br>
+          reaction_options.json: {% if t.has_reaction_options %}ja{% else %}nein{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="content-card p-3">
+  <h6 class="mb-3">Theme pro Contest zuweisen</h6>
+  {% for c in contests %}
+  {% set c_year = contest_display_year(c) %}
+  <form method="post" class="assign-row row g-2 align-items-center py-3 px-2 mb-2">
+    <input type="hidden" name="action" value="assign_theme">
+    <input type="hidden" name="contest_id" value="{{ c.id }}">
+
+    <div class="col-md-3">
+      <div><strong>{{ c.title }} ({{ c_year }})</strong></div>
+      {% if contest_start_date(c) %}<div class="small text-secondary">Start: {{ contest_start_date(c) }}</div>{% endif %}
+      <div class="small text-secondary">Aktuell: <span class="mono">{{ c.theme_id or 'default' }}</span></div>
+      <div class="small text-secondary">Öffentlich: <a href="{{ contest_public_url(c) }}" target="_blank">{{ c.slug or c.id }}</a></div>
+    </div>
+
+    <div class="col-md-3">
+      <select class="form-select" name="theme_id">
+        {% for t in theme_options %}
+        <option value="{{ t }}" {% if (c.theme_id or 'default') == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6 d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary btn-sm" type="submit">Theme speichern</button>
+      <select class="form-select form-select-sm" id="preview_theme_{{ c.id }}" style="width:auto;min-width:180px;">
+        {% for t in theme_options %}
+        <option value="{{ t }}" {% if (c.theme_id or 'default') == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-dark btn-sm" type="button" onclick="openThemePreview('{{ c.slug or ('contest-' ~ c.id) }}', {{ c.id }}, 'vote')">Preview Vote</button>
+      <button class="btn btn-outline-dark btn-sm" type="button" onclick="openThemePreview('{{ c.slug or ('contest-' ~ c.id) }}', {{ c.id }}, 'results')">Preview Results</button>
+      <button class="btn btn-outline-dark btn-sm" type="button" onclick="openThemePreview('{{ c.slug or ('contest-' ~ c.id) }}', {{ c.id }}, 'waiting')">Preview Waiting</button>
+    </div>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openThemePreview(contestSlug, contestId, targetKind) {
+  const sel = document.getElementById(`preview_theme_${contestId}`);
+  const theme = sel ? sel.value : 'default';
+  if (targetKind === 'results') {
+    window.open(`/public-results/${contestSlug}?theme_preview=${encodeURIComponent(theme)}&preview=1`, '_blank');
+    return;
+  }
+  if (targetKind === 'waiting') {
+    window.open(`/public-waiting/${contestSlug}?theme_preview=${encodeURIComponent(theme)}&preview=1`, '_blank');
+    return;
+  }
+  window.open(`/contest/${contestSlug}?theme_preview=${encodeURIComponent(theme)}&preview=1`, '_blank');
+}
+</script>
+{% endblock %}

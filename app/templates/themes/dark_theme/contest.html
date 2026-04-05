@@ -1,0 +1,97 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ contest.title }} - Casino Voting</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root{--gold:#ffd166;--wine:#2a113f;--ink:#0c0914;--chip:#3a1f58}
+    body{background:radial-gradient(circle at 50% -20%,#4d1b6e,#0c0914 60%);color:#ffeac0}
+    .topbar{background:rgba(19,9,30,.72);backdrop-filter:blur(6px);border-bottom:1px solid #7f5a1e}
+    .panel{background:linear-gradient(180deg,#1b1230,#120b22);border:1px solid #7a5a2a;border-radius:16px;box-shadow:0 0 22px rgba(255,209,102,.15)}
+    .img-wrap{cursor:pointer}
+    .img-wrap img{width:100%;height:230px;object-fit:cover;border-radius:12px}
+    .vote-btn.active{background:#d9a936!important;color:#251600!important;border-color:#d9a936!important}
+    .react-btn.active{background:#d9a936!important;color:#251600!important;border-color:#d9a936!important}
+    .chip{display:inline-block;padding:4px 10px;border-radius:999px;background:#301d57;color:#ffe8a7;border:1px solid #8d6b2f}
+  </style>
+</head>
+<body>
+<nav class="navbar topbar sticky-top">
+  <div class="container-fluid px-3">
+    <span class="fw-bold">🎰 {{ contest.title }}</span>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-warning btn-sm" href="{{ url_for('main.archive') }}">Archiv</a>
+      <a class="btn btn-warning btn-sm" href="{{ contest_results_url(contest) }}">Ergebnisse</a>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.login') }}">Admin</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="panel p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="chip">Verbleibend: <strong id="votesLeft">{{ votes_left }}</strong> / {{ year_cfg.max_actions }}</span>
+      <span class="chip">{{ year_cfg.unit_icon }} {{ year_cfg.unit_name }}</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-2" id="optionBar">
+      {% for opt in vote_options %}
+      <button type="button" class="btn btn-sm btn-outline-warning vote-btn" data-key="{{ opt.opt_key }}">
+        {% if opt.display_type == 'image' and opt.image_filename %}
+          <img src="{{ url_for('main.asset_year', year=year, filename=opt.image_filename) }}" alt="{{ opt.label }}" style="height:18px;width:18px;object-fit:cover;border-radius:4px;">
+        {% else %}
+          {{ opt.icon or '' }}
+        {% endif %}
+        {{ opt.label }}
+      </button>
+      {% endfor %}
+      <button class="btn btn-sm btn-outline-danger" id="resetVotesBtn">Stimmen zurücksetzen</button>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for image in images %}
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="panel p-3 h-100">
+        <div class="img-wrap mb-2" data-image-id="{{ image.id }}">
+          <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" alt="Bild">
+        </div>
+        <div class="fw-semibold">{{ image.uploader or 'Anonymous' }}</div>
+        <div class="small text-warning-emphasis mb-2">{{ image.description or '' }}</div>
+        <div class="d-flex flex-wrap gap-2">
+          {% for r in reaction_options %}
+          <button class="btn btn-sm btn-outline-warning react-btn {% if r.reaction_key in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="{{ r.reaction_key }}">
+            {% if r.display_type == 'image' and r.image_filename %}
+              <img src="{{ url_for('main.asset_year', year=year, filename=r.image_filename) }}" style="height:16px;width:16px;object-fit:cover;border-radius:3px;">
+            {% else %}
+              {{ r.icon or '' }}
+            {% endif %}
+            {{ r.label }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
+<script>
+const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
+localStorage.setItem('voter_session_id', voterSessionId);
+document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
+let selectedKey = "{{ (vote_options[0].opt_key if vote_options else '') }}";
+function setActiveOption(key){ selectedKey=key; document.querySelectorAll('.vote-btn[data-key]').forEach(b=>b.classList.toggle('active', b.dataset.key===key)); }
+document.querySelectorAll('.vote-btn[data-key]').forEach(btn=>btn.addEventListener('click',()=>setActiveOption(btn.dataset.key)));
+if(selectedKey) setActiveOption(selectedKey);
+async function syncState(){ const r=await fetch(`/api/voter-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`); const s=await r.json(); document.getElementById('votesLeft').textContent=s.votes_left ?? 0; }
+for (const card of document.querySelectorAll('.img-wrap[data-image-id]')){ card.addEventListener('click', async ()=>{ if(!selectedKey)return; const r=await fetch(`/vote/${card.dataset.imageId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voter_session_id:voterSessionId,contest_year:{{ year }},vote_option_key:selectedKey})}); const d=await r.json(); if(!d.success){alert(d.error||'Fehler');return;} syncState(); }); }
+for (const btn of document.querySelectorAll('.react-btn')){ btn.addEventListener('click', async ()=>{ const r=await fetch(`/react/${btn.dataset.imageId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voter_session_id:voterSessionId,contest_year:{{ year }},reaction_type:btn.dataset.reaction})}); const d=await r.json(); if(!d.success){alert(d.error||'Fehler');return;} btn.classList.toggle('active', !!d.active); }); }
+document.getElementById('resetVotesBtn').addEventListener('click', async ()=>{ const r=await fetch(`/api/reset-votes/{{ year }}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voter_session_id:voterSessionId})}); const d=await r.json(); if(d.success)syncState(); });
+syncState();
+</script>
+</body>
+</html>
+

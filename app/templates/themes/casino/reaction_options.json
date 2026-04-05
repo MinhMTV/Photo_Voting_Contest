@@ -1,0 +1,90 @@
+[
+  {
+    "reaction_key": "temu_ordered",
+    "label": "Auf Wish bestellt, von Temu geliefert.",
+    "display_type": "icon",
+    "icon": "🛒",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 10
+  },
+  {
+    "reaction_key": "low_budget_king",
+    "label": "Null Budget, aber maximaler Wille.",
+    "display_type": "icon",
+    "icon": "👑",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 20
+  },
+  {
+    "reaction_key": "npc_costume",
+    "label": "Sieht aus wie ein NPC aus der Tutorial-Zone.",
+    "display_type": "icon",
+    "icon": "🧍",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 30
+  },
+  {
+    "reaction_key": "diy_effort",
+    "label": "Mit Heißkleber und Herzblut gebaut.",
+    "display_type": "icon",
+    "icon": "🧵",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 40
+  },
+  {
+    "reaction_key": "explained_cool_or_lost",
+    "label": "Mit Erklärung plötzlich 10-mal besser.",
+    "display_type": "icon",
+    "icon": "🤨",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 50
+  },
+  {
+    "reaction_key": "funny_costume",
+    "label": "Nicht stark, aber brutal lustig.",
+    "display_type": "icon",
+    "icon": "🤣",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 60
+  },
+  {
+    "reaction_key": "instagram_vs_reality",
+    "label": "Instagram vs. Reality.",
+    "display_type": "icon",
+    "icon": "📸",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 70
+  },
+  {
+    "reaction_key": "spirit_animal",
+    "label": "Leider mein Spirit Animal.",
+    "display_type": "icon",
+    "icon": "🖤",
+    "image_filename": null,
+    "points": 20,
+    "include_in_total": 1,
+    "active": true,
+    "sort_order": 80
+  }
+]
