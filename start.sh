@@ -70,6 +70,12 @@ else
   echo "✅ .env Datei existiert – wird nicht überschrieben."
 fi
 
+# Stelle sicher, dass neue Python-Abhängigkeiten nach einem Update
+# auch ohne kompletten Docker-Rebuild verfügbar sind.
+echo "📦 Installiere/aktualisiere Python-Abhängigkeiten..."
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+
 # 🧠 Starte Flask-App
 echo "🚀 Starte Flask-App..."
 python3 -m flask run --host=0.0.0.0 --port=5050
