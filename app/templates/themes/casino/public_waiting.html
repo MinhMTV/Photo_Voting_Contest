@@ -341,7 +341,7 @@
         .stats-grid{
             width:min(1120px, 100%);
             display:grid;
-            grid-template-columns:1fr 1fr;
+            grid-template-columns:repeat(3, 1fr);
             gap:24px;
         }
         .stats-inner{
@@ -396,6 +396,39 @@
             grid-template-columns:repeat(2, 1fr);
             gap:12px;
             margin-top:18px;
+        }
+        .radial-list{
+            display:grid;
+            gap:14px;
+        }
+        .radial-row{
+            display:grid;
+            grid-template-columns:92px 1fr;
+            gap:14px;
+            align-items:center;
+        }
+        .radial{
+            --pct:0;
+            width:92px;
+            height:92px;
+            border-radius:50%;
+            display:grid;
+            place-items:center;
+            background:
+                radial-gradient(circle at center, rgba(18,12,16,.95) 0 54%, transparent 55%),
+                conic-gradient(#ffd56a 0 calc(var(--pct) * 1%), rgba(255,255,255,.08) calc(var(--pct) * 1%) 100%);
+            border:1px solid rgba(255,213,106,.16);
+            box-shadow:0 0 0 8px rgba(255,213,106,.03);
+        }
+        .radial span{
+            color:#fff4d0;
+            font-weight:900;
+            font-size:1rem;
+        }
+        .radial-copy{
+            color:#ecd8b0;
+            font-size:.92rem;
+            line-height:1.5;
         }
         .metric-card{
             border-radius:22px;
@@ -633,6 +666,57 @@
                 </div>
             </div>
         </section>
+
+        <section class="stats-card">
+            <div class="stats-inner">
+                <div class="stats-title">Show-Mix</div>
+                {% set total_reactions = (reaction_stats | sum(attribute='count')) if reaction_stats else 0 %}
+                {% set total_activity = (total_chip_votes or 0) + (duel_spin_count or 0) + total_reactions %}
+                {% set voter_utilization = (((voter_count or 0) / (participant_count or 1)) * 100) if participant_count else 0 %}
+                <div class="radial-list">
+                    <div class="radial-row">
+                        <div class="radial" style="--pct: {{ ((total_chip_votes or 0) / total_activity * 100) if total_activity else 0 }};">
+                            <span>{{ (((total_chip_votes or 0) / total_activity * 100) if total_activity else 0) | round(0) }}%</span>
+                        </div>
+                        <div class="radial-copy">
+                            <strong>Chip-Aktion</strong><br>
+                            {{ total_chip_votes or 0 }} gesetzte Chips. Das ist der Anteil der klassischen „ich leg jetzt wirklich Jetons auf den Tisch“-Energie.
+                        </div>
+                    </div>
+                    <div class="radial-row">
+                        <div class="radial" style="--pct: {{ ((duel_spin_count or 0) / total_activity * 100) if total_activity else 0 }};">
+                            <span>{{ (((duel_spin_count or 0) / total_activity * 100) if total_activity else 0) | round(0) }}%</span>
+                        </div>
+                        <div class="radial-copy">
+                            <strong>Duell-Modus</strong><br>
+                            {{ duel_spin_count or 0 }} Spins. Das ist der direkte „wir brauchen noch mehr Drama“-Anteil der Show.
+                        </div>
+                    </div>
+                    <div class="radial-row">
+                        <div class="radial" style="--pct: {{ (total_reactions / total_activity * 100) if total_activity else 0 }};">
+                            <span>{{ ((total_reactions / total_activity * 100) if total_activity else 0) | round(0) }}%</span>
+                        </div>
+                        <div class="radial-copy">
+                            <strong>Kategorie-Chaos</strong><br>
+                            {{ total_reactions }} Reaktionen. Hier zeigt sich, wie viel Kommentar-Energie schon auf dem Kessel ist.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mini-metrics">
+                    <div class="metric-card">
+                        <div class="metric-kicker">Aktivität gesamt</div>
+                        <div class="metric-value">{{ total_activity }}</div>
+                        <div class="metric-copy">Alle Chips, Spins und Kategorie-Reaktionen zusammengerechnet.</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-kicker">Voter-Auslastung</div>
+                        <div class="metric-value">{{ voter_utilization | round(0) }}%</div>
+                        <div class="metric-copy">Wie stark die Crowd im Verhältnis zu den Teilnehmenden schon mitmischt.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
     </div>
 </div>
@@ -667,7 +751,7 @@
         const seconds = totalSeconds % 60;
 
         if (days > 0) {
-            el.textContent = `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
+            el.textContent = `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
         } else {
             el.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
