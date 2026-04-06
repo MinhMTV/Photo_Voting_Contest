@@ -6,6 +6,7 @@ import random
 import tarfile
 import shutil
 import io
+import math
 from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, current_app, jsonify, send_from_directory, flash, send_file
@@ -2041,9 +2042,99 @@ def public_waiting_context(year: int, contest: dict | None = None) -> dict:
                 "key": key,
                 "label": option.get("label") or key,
                 "count": vote_map.get(key, 0),
+                "value": int(option.get("value") or 0),
+                "is_special": bool(option.get("is_special")),
             }
         )
     vote_stats.sort(key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
+    total_reactions = sum(int(item["count"] or 0) for item in reaction_stats)
+    total_activity = int(total_chip_votes or 0) + int(duel_spin_count or 0) + total_reactions
+    active_vote_option_count = sum(1 for option in get_vote_options(year) if option.get("active"))
+
+    def _normalized_entropy(values: list[int]) -> float:
+        samples = [int(v or 0) for v in values if int(v or 0) > 0]
+        if len(samples) <= 1:
+            return 0.0
+        total = float(sum(samples))
+        entropy = 0.0
+        for sample in samples:
+            p = sample / total
+            entropy -= p * math.log(p, 2)
+        max_entropy = math.log(len(samples), 2) if len(samples) > 1 else 0.0
+        if max_entropy <= 0:
+            return 0.0
+        return max(0.0, min(100.0, (entropy / max_entropy) * 100.0))
+
+    chip_chaos_index = _normalized_entropy([item["count"] for item in vote_stats])
+    category_chaos_index = _normalized_entropy([item["count"] for item in reaction_stats])
+    high_roller_chip_count = sum(
+        int(item["count"] or 0)
+        for item in vote_stats
+        if int(item.get("value") or 0) >= 50 or bool(item.get("is_special"))
+    )
+    high_roller_share = round((high_roller_chip_count / total_chip_votes) * 100, 1) if total_chip_votes else 0.0
+
+    hottest_rows = db.execute(
+        """
+        SELECT
+            i.id,
+            i.uploader,
+            i.filename,
+            COALESCE(v.vote_count, 0) AS vote_count,
+            COALESCE(r.reaction_count, 0) AS reaction_count,
+            COALESCE(d.duel_count, 0) AS duel_count
+        FROM images i
+        LEFT JOIN (
+            SELECT image_id, COUNT(*) AS vote_count
+            FROM votes
+            WHERE contest_id = ?
+            GROUP BY image_id
+        ) v ON v.image_id = i.id
+        LEFT JOIN (
+            SELECT image_id, COUNT(*) AS reaction_count
+            FROM reactions
+            WHERE contest_id = ?
+            GROUP BY image_id
+        ) r ON r.image_id = i.id
+        LEFT JOIN (
+            SELECT image_id, COUNT(*) AS duel_count
+            FROM duel_votes
+            WHERE contest_id = ?
+            GROUP BY image_id
+        ) d ON d.image_id = i.id
+        WHERE i.contest_id = ? AND i.visible = 1
+        ORDER BY (COALESCE(v.vote_count, 0) + COALESCE(r.reaction_count, 0) + COALESCE(d.duel_count, 0)) DESC,
+                 COALESCE(v.vote_count, 0) DESC,
+                 i.id ASC
+        LIMIT 5
+        """,
+        (year, year, year, year),
+    ).fetchall()
+    hottest_images = []
+    for idx, row in enumerate(hottest_rows, start=1):
+        vote_count = int(row["vote_count"] or 0)
+        reaction_count = int(row["reaction_count"] or 0)
+        duel_count = int(row["duel_count"] or 0)
+        total = vote_count + reaction_count + duel_count
+        hottest_images.append(
+            {
+                "rank": idx,
+                "label": (row["uploader"] or "").strip() or f"Bild {idx}",
+                "filename": row["filename"] or "",
+                "total": total,
+                "vote_count": vote_count,
+                "reaction_count": reaction_count,
+                "duel_count": duel_count,
+            }
+        )
+
+    top_reaction_label = reaction_stats[0]["label"] if reaction_stats else "Noch offen"
+    top_vote_label = vote_stats[0]["label"] if vote_stats else "Noch offen"
+    actions_per_voter = round(total_activity / voter_count, 1) if voter_count else 0.0
+    chips_per_voter = round(total_chip_votes / voter_count, 1) if voter_count else 0.0
+    reactions_per_voter = round(total_reactions / voter_count, 1) if voter_count else 0.0
+    duel_slots_per_participant = round((duel_spin_count * 3) / participant_count, 1) if participant_count else 0.0
+    chip_completion_rate = round((total_chip_votes / (voter_count * active_vote_option_count)) * 100, 1) if voter_count and active_vote_option_count else 0.0
     return {
         "year": year,
         "contest": contest,
@@ -2056,6 +2147,19 @@ def public_waiting_context(year: int, contest: dict | None = None) -> dict:
         "duel_image_slots": duel_spin_count * 3,
         "reaction_stats": reaction_stats,
         "vote_stats": vote_stats,
+        "total_reactions": total_reactions,
+        "total_activity": total_activity,
+        "top_reaction_label": top_reaction_label,
+        "top_vote_label": top_vote_label,
+        "hottest_images": hottest_images,
+        "chip_chaos_index": chip_chaos_index,
+        "category_chaos_index": category_chaos_index,
+        "high_roller_share": high_roller_share,
+        "actions_per_voter": actions_per_voter,
+        "chips_per_voter": chips_per_voter,
+        "reactions_per_voter": reactions_per_voter,
+        "duel_slots_per_participant": duel_slots_per_participant,
+        "chip_completion_rate": chip_completion_rate,
         "reveal_at_iso": str(contest.get("end_at") or "").strip(),
     }
 
