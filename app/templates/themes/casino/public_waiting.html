@@ -104,7 +104,7 @@
                 <div class="title">Chip-Verteilung</div>
                 <div class="bars">{% set max_vote_count = (vote_stats | map(attribute='count') | max) if vote_stats else 0 %}{% for item in vote_stats[:6] %}<div class="bar-row"><div class="bar-label">{{ item.label }}</div><div class="bar-track"><div class="bar-fill" style="width: {{ (item.count / max_vote_count * 100) if max_vote_count else 0 }}%;">{{ item.count }}</div></div><div class="bar-value">{{ item.count }}</div></div>{% endfor %}{% if not vote_stats %}<div class="text-secondary small">Noch keine Chips gesetzt.</div>{% endif %}</div>
                 <div class="mini-grid">
-                    <div class="metric"><div class="metric-kicker">Spins theoretisch</div><div class="metric-value" data-counter="{{ (voter_count or 0) * 10 }}">{{ (voter_count or 0) * 10 }}</div><div class="metric-copy">Wenn alle bisherigen Voting-Personen ihre 10 Duell-Spins voll ausreizen, landet ihr genau hier.</div></div>
+                    <div class="metric"><div class="metric-kicker">Beliebtester Chip</div><div class="metric-value">{{ top_vote_label }}</div><div class="metric-copy">{% if vote_stats %}{{ vote_stats[0].count }} Mal gesetzt und damit gerade der klare Lieblingschip.{% else %}Noch liegt kein Chip auf dem Tisch.{% endif %}</div></div>
                     <div class="metric"><div class="metric-kicker">Bildslots im Duell</div><div class="metric-value" data-counter="{{ duel_image_slots or 0 }}">{{ duel_image_slots or 0 }}</div><div class="metric-copy">So viele Bildanzeigen wurden ueber das Duell bisher wirklich ausgespielt.</div></div>
                 </div>
             </div></section>
@@ -124,11 +124,11 @@
                 <div class="title">Crowd Profile</div>
                 <div class="mini-grid">
                     <div class="metric"><div class="metric-kicker">Aktionen pro Voter</div><div class="metric-value">{{ actions_per_voter }}</div><div class="metric-copy">Wie viel eine abstimmende Person im Schnitt schon produziert hat.</div></div>
-                    <div class="metric"><div class="metric-kicker">High-Roller-Anteil</div><div class="metric-value">{{ high_roller_share }}%</div><div class="metric-copy">{{ top_vote_label }} und andere schwere Chips ziehen gerade diesen Anteil.</div></div>
-                    <div class="metric"><div class="metric-kicker">Chip-Chaos-Index</div><div class="metric-value">{{ chip_chaos_index | round(0) }}%</div><div class="metric-copy">Je hoeher, desto gleichmaessiger ist die Chip-Verteilung statt einer klaren Lieblingshoehe.</div></div>
-                    <div class="metric"><div class="metric-kicker">Kategorie-Chaos-Index</div><div class="metric-value">{{ category_chaos_index | round(0) }}%</div><div class="metric-copy">Zeigt, wie breit die Crowd ihre Kommentare ueber alle Kategorien streut.</div></div>
-                    <div class="metric"><div class="metric-kicker">Chip-Komplettheit</div><div class="metric-value">{{ chip_completion_rate }}%</div><div class="metric-copy">Wie viel vom theoretischen Standard-Chip-Setup pro bisherigem Voter schon wirklich gelegt wurde.</div></div>
-                    <div class="metric"><div class="metric-kicker">Spin-Slots je Person</div><div class="metric-value">{{ duel_slots_per_participant }}</div><div class="metric-copy">Wie viele Duell-Bildslots statistisch schon pro teilnehmendem Bild ausgespielt wurden.</div></div>
+                    <div class="metric"><div class="metric-kicker">High-Roller-Anteil</div><div class="metric-value">{{ high_roller_share }}%</div><div class="metric-copy">So gross ist gerade der Anteil der schweren Chips ab 50 oder All-in.</div></div>
+                    <div class="metric"><div class="metric-kicker">Chips pro Bild</div><div class="metric-value">{{ ((total_chip_votes or 0) / (participant_count or 1)) | round(1) if participant_count else 0 }}</div><div class="metric-copy">Wie viele klassische Votes im Schnitt auf ein teilnehmendes Bild kommen.</div></div>
+                    <div class="metric"><div class="metric-kicker">Reaktionen pro Bild</div><div class="metric-value">{{ ((total_reactions or 0) / (participant_count or 1)) | round(1) if participant_count else 0 }}</div><div class="metric-copy">Wie viele Kategorie-Reaktionen durchschnittlich pro Bild schon vergeben wurden.</div></div>
+                    <div class="metric"><div class="metric-kicker">Reaktionen pro Kategorie</div><div class="metric-value">{{ ((total_reactions or 0) / (category_count or 1)) | round(1) if category_count else 0 }}</div><div class="metric-copy">Wie stark die vorhandenen Kategorien im Schnitt schon benutzt wurden.</div></div>
+                    <div class="metric"><div class="metric-kicker">Duell-Spins pro Voter</div><div class="metric-value">{{ ((duel_spin_count or 0) / (voter_count or 1)) | round(1) if voter_count else 0 }}</div><div class="metric-copy">Wie viele Spins eine abstimmende Person bisher durchschnittlich im Duell gedreht hat.</div></div>
                 </div>
             </div></section>
 
