@@ -5,10 +5,12 @@ from flask import session
 from flask import url_for
 import re
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
     load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".flask_env"))
     load_dotenv()
 
@@ -22,6 +24,7 @@ def create_app():
     app.config.from_mapping(
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "admin123"),
         SECRET_KEY=os.getenv("SECRET_KEY", "dev123"),
+        PREFERRED_URL_SCHEME="https" if str(os.getenv("FLASK_ENV", "") or "").strip().lower() == "production" else "http",
         UPLOAD_FOLDER=os.path.join(app.root_path, "static/uploads"),
         DATABASE=os.path.join(app.instance_path, "votes.db"),
         BACKUP_FOLDER=os.path.join(os.path.dirname(app.root_path), "backups"),

@@ -1173,6 +1173,33 @@ def list_google_drive_backups(limit: int = 10) -> tuple[list[dict], str | None]:
         return ([], str(exc))
 
 
+def delete_runtime_backup(filename: str) -> tuple[bool, str]:
+    safe_name = os.path.basename(filename or "").strip()
+    if not safe_name or safe_name != filename:
+        return False, "Ungültiger Backup-Dateiname."
+    backup_path = os.path.join(backup_root_folder(), safe_name)
+    if not os.path.isfile(backup_path):
+        return False, "Backup-Datei wurde nicht gefunden."
+    try:
+        os.remove(backup_path)
+        return True, f"Backup gelöscht: {safe_name}"
+    except OSError as exc:
+        return False, f"Backup konnte nicht gelöscht werden: {exc}"
+
+
+def delete_google_drive_backup(file_id: str, filename: str = "") -> tuple[bool, str]:
+    file_id = str(file_id or "").strip()
+    if not file_id:
+        return False, "Google-Drive-Datei fehlt."
+    try:
+        service = _google_drive_client()
+        service.files().delete(fileId=file_id).execute()
+        label = str(filename or file_id).strip()
+        return True, f"Drive-Backup gelöscht: {label}"
+    except Exception as exc:
+        return False, str(exc)
+
+
 def create_runtime_backup(keep_last: int = 10, label: str = "manual") -> str | None:
     repo_root = os.path.dirname(current_app.root_path)
     folder = backup_root_folder()
@@ -2192,6 +2219,11 @@ def admin_settings():
             ok, message = restore_runtime_backup(backup_name)
             flash(message, "success" if ok else "danger")
 
+        elif action == "delete_backup":
+            backup_name = (request.form.get("backup_name") or "").strip()
+            ok, message = delete_runtime_backup(backup_name)
+            flash(message, "success" if ok else "danger")
+
         elif action == "save_google_drive":
             client_id = (request.form.get("google_drive_client_id") or "").strip()
             client_secret = (request.form.get("google_drive_client_secret") or "").strip()
@@ -2221,6 +2253,12 @@ def admin_settings():
             backup_name = (request.form.get("backup_name") or "").strip()
             ok, message = download_google_drive_backup(file_id, backup_name)
             flash(f"Drive-Backup lokal gespeichert: {message}" if ok else message, "success" if ok else "danger")
+
+        elif action == "delete_drive_backup":
+            file_id = (request.form.get("drive_file_id") or "").strip()
+            backup_name = (request.form.get("backup_name") or "").strip()
+            ok, message = delete_google_drive_backup(file_id, backup_name)
+            flash(message, "success" if ok else "danger")
 
         elif action == "disconnect_google_drive":
             clear_google_drive_connection()
