@@ -884,6 +884,50 @@ def backup_root_folder() -> str:
     return path
 
 
+def project_root_folder() -> str:
+    return os.path.abspath(os.path.join(current_app.root_path, os.pardir))
+
+
+def _normalized_project_relpath(value: str | None) -> str:
+    raw = str(value or "").replace("\\", "/").strip().strip("/")
+    parts = [part for part in raw.split("/") if part and part not in {".", ".."}]
+    return "/".join(parts)
+
+
+def resolve_project_path(relative_path: str | None = None) -> str:
+    repo_root = project_root_folder()
+    normalized = _normalized_project_relpath(relative_path)
+    target = os.path.abspath(os.path.join(repo_root, normalized))
+    if os.path.commonpath([repo_root, target]) != repo_root:
+        raise ValueError("Pfad liegt außerhalb des Projekts.")
+    return target
+
+
+def project_relpath(path: str) -> str:
+    repo_root = project_root_folder()
+    rel = os.path.relpath(os.path.abspath(path), repo_root).replace("\\", "/")
+    return "" if rel == "." else rel
+
+
+def _is_protected_project_path(path: str) -> bool:
+    rel = project_relpath(path)
+    protected = {"", ".git"}
+    return rel in protected or rel.startswith(".git/")
+
+
+def _format_file_size(size: int) -> str:
+    value = float(max(0, int(size or 0)))
+    units = ["B", "KB", "MB", "GB"]
+    unit = units[0]
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            break
+        value /= 1024
+    if unit == "B":
+        return f"{int(value)} {unit}"
+    return f"{value:.1f} {unit}"
+
+
 GOOGLE_DRIVE_BACKUP_FOLDER_NAME = "Photo Voting Contest Backups"
 GOOGLE_DRIVE_SCOPES = [
     "openid",
@@ -2351,6 +2395,136 @@ def admin_settings():
         vote_modes=["single_vote", "multi_vote", "unique_options"],
         theme_options=available_theme_ids(),
     )
+
+
+@bp.route("/admin/files", methods=["GET", "POST"])
+def admin_files():
+    if not session.get("admin"):
+        return redirect(url_for("main.login"))
+
+    current_path = _normalized_project_relpath(request.values.get("path"))
+    try:
+        current_abs = resolve_project_path(current_path)
+    except ValueError:
+        flash("Ungültiger Projektpfad.", "danger")
+        return redirect(url_for("main.admin_files"))
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+        redirect_path = _normalized_project_relpath(request.form.get("path") or current_path)
+        try:
+            target_dir = resolve_project_path(redirect_path)
+        except ValueError:
+            flash("Ungültiger Zielpfad.", "danger")
+            return redirect(url_for("main.admin_files"))
+
+        if action == "create_folder":
+            folder_name = secure_filename((request.form.get("folder_name") or "").strip())
+            if not folder_name:
+                flash("Bitte einen gültigen Ordnernamen angeben.", "warning")
+            else:
+                new_folder = os.path.join(target_dir, folder_name)
+                os.makedirs(new_folder, exist_ok=True)
+                flash(f"Ordner erstellt: {folder_name}", "success")
+
+        elif action == "upload_files":
+            files = request.files.getlist("files")
+            saved = 0
+            for file in files:
+                if not file or not getattr(file, "filename", ""):
+                    continue
+                filename = secure_filename(file.filename)
+                if not filename:
+                    continue
+                file.save(os.path.join(target_dir, filename))
+                saved += 1
+            if saved:
+                flash(f"{saved} Datei(en) hochgeladen.", "success")
+            else:
+                flash("Keine Datei hochgeladen.", "warning")
+
+        elif action == "delete_entry":
+            entry_path = _normalized_project_relpath(request.form.get("entry_path"))
+            try:
+                entry_abs = resolve_project_path(entry_path)
+            except ValueError:
+                flash("Ungültiger Pfad.", "danger")
+                return redirect(url_for("main.admin_files", path=redirect_path))
+
+            if not os.path.exists(entry_abs):
+                flash("Datei oder Ordner wurde nicht gefunden.", "warning")
+            elif _is_protected_project_path(entry_abs):
+                flash("Dieser Pfad ist geschützt und kann nicht gelöscht werden.", "danger")
+            else:
+                if os.path.isdir(entry_abs):
+                    shutil.rmtree(entry_abs, ignore_errors=True)
+                else:
+                    os.remove(entry_abs)
+                flash(f"Gelöscht: {entry_path or os.path.basename(entry_abs)}", "success")
+
+        return redirect(url_for("main.admin_files", path=redirect_path or None))
+
+    if not os.path.isdir(current_abs):
+        flash("Der gewählte Pfad ist kein Ordner.", "warning")
+        return redirect(url_for("main.admin_files"))
+
+    entries: list[dict] = []
+    try:
+        names = sorted(os.listdir(current_abs), key=lambda item: (not os.path.isdir(os.path.join(current_abs, item)), item.lower()))
+    except OSError:
+        names = []
+
+    for name in names:
+        full = os.path.join(current_abs, name)
+        try:
+            stat = os.stat(full)
+        except OSError:
+            continue
+        rel = project_relpath(full)
+        entries.append(
+            {
+                "name": name,
+                "path": rel,
+                "is_dir": os.path.isdir(full),
+                "size": _format_file_size(stat.st_size if os.path.isfile(full) else 0),
+                "modified_at": datetime.fromtimestamp(stat.st_mtime),
+                "is_protected": _is_protected_project_path(full),
+            }
+        )
+
+    breadcrumbs = [{"label": "Projekt", "path": ""}]
+    running = []
+    for part in [p for p in current_path.split("/") if p]:
+        running.append(part)
+        breadcrumbs.append({"label": part, "path": "/".join(running)})
+
+    parent_path = ""
+    if current_path:
+        parent_path = "/".join(current_path.split("/")[:-1])
+
+    return render_template(
+        "admin_files.html",
+        year=current_year(),
+        current_path=current_path,
+        current_abs=current_abs,
+        parent_path=parent_path,
+        breadcrumbs=breadcrumbs,
+        entries=entries,
+    )
+
+
+@bp.route("/admin/files/download")
+def admin_files_download():
+    if not session.get("admin"):
+        return redirect(url_for("main.login"))
+    relative_path = _normalized_project_relpath(request.args.get("path"))
+    try:
+        full_path = resolve_project_path(relative_path)
+    except ValueError:
+        return redirect(url_for("main.admin_files"))
+    if not os.path.isfile(full_path):
+        return redirect(url_for("main.admin_files", path="/".join(relative_path.split("/")[:-1]) if relative_path else None))
+    return send_file(full_path, as_attachment=True, download_name=os.path.basename(full_path))
 
 
 @bp.route("/admin/themes", methods=["GET", "POST"])

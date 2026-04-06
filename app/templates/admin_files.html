@@ -1,0 +1,113 @@
+{% extends "base_admin.html" %}
+{% set section = 'files' %}
+
+{% block title %}Dateien{% endblock %}
+{% block page_title %}Datei-Explorer{% endblock %}
+{% block page_subtitle %}Durchsuche das komplette Projekt, lade Dateien hoch, lege Ordner an und verwalte Backups, Uploads, Assets, Themes und Daten direkt im Admin-Board.{% endblock %}
+
+{% block head_extra %}
+<style>
+.file-toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.file-box{background:#fff;border:1px solid #e3e8f7;border-radius:16px;padding:14px}
+.section-title{font-size:.92rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7382ab}
+.crumbs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.crumbs a{text-decoration:none}
+.entry-table td,.entry-table th{vertical-align:middle}
+.entry-name{display:flex;align-items:center;gap:10px}
+.entry-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:#f3f6ff;border:1px solid #dee6fb}
+.path-box{background:#f8faff;border:1px solid #e1e8fb;border-radius:12px;padding:10px 12px}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="content-card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+    <div>
+      <div class="section-title mb-2">Aktueller Ordner</div>
+      <div class="crumbs mb-2">
+        {% for crumb in breadcrumbs %}
+          <a href="{{ url_for('main.admin_files', path=crumb.path or None) }}" class="btn btn-sm {% if loop.last %}btn-primary{% else %}btn-outline-primary{% endif %}">{{ crumb.label }}</a>
+        {% endfor %}
+        {% if parent_path or current_path %}
+        <a href="{{ url_for('main.admin_files', path=parent_path or None) }}" class="btn btn-sm btn-outline-secondary">Eine Ebene hoch</a>
+        {% endif %}
+      </div>
+      <div class="path-box small mono">{{ current_abs }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="file-toolbar mb-3">
+  <div class="file-box">
+    <div class="section-title mb-2">Ordner anlegen</div>
+    <form method="post" class="d-flex gap-2 flex-wrap">
+      <input type="hidden" name="action" value="create_folder">
+      <input type="hidden" name="path" value="{{ current_path }}">
+      <input class="form-control" name="folder_name" placeholder="neuer-ordner" style="max-width:260px;">
+      <button class="btn btn-outline-primary btn-sm" type="submit">Ordner erstellen</button>
+    </form>
+  </div>
+  <div class="file-box">
+    <div class="section-title mb-2">Dateien hochladen</div>
+    <form method="post" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center">
+      <input type="hidden" name="action" value="upload_files">
+      <input type="hidden" name="path" value="{{ current_path }}">
+      <input class="form-control" type="file" name="files" multiple style="max-width:320px;">
+      <button class="btn btn-outline-dark btn-sm" type="submit">Hochladen</button>
+    </form>
+  </div>
+</div>
+
+<div class="content-card p-3">
+  <div class="section-title mb-3">Inhalt</div>
+  {% if entries %}
+  <div class="table-responsive">
+    <table class="table entry-table align-middle">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Typ</th>
+          <th>Größe</th>
+          <th>Geändert</th>
+          <th class="text-end">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td>
+            <div class="entry-name">
+              <span class="entry-icon">{{ '📁' if entry.is_dir else '📄' }}</span>
+              {% if entry.is_dir %}
+              <a href="{{ url_for('main.admin_files', path=entry.path) }}" class="text-decoration-none">{{ entry.name }}</a>
+              {% else %}
+              <span class="mono">{{ entry.name }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>{{ 'Ordner' if entry.is_dir else 'Datei' }}</td>
+          <td class="small text-secondary">{{ '—' if entry.is_dir else entry.size }}</td>
+          <td class="small text-secondary">{{ entry.modified_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-2 flex-wrap">
+              {% if not entry.is_dir %}
+              <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.admin_files_download', path=entry.path) }}">Download</a>
+              {% endif %}
+              <form method="post" onsubmit="return confirm('Eintrag wirklich löschen?');">
+                <input type="hidden" name="action" value="delete_entry">
+                <input type="hidden" name="path" value="{{ current_path }}">
+                <input type="hidden" name="entry_path" value="{{ entry.path }}">
+                <button class="btn btn-outline-danger btn-sm" type="submit" {% if entry.is_protected %}disabled title="Geschützter Pfad"{% endif %}>Löschen</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-secondary small">Dieser Ordner ist gerade leer.</div>
+  {% endif %}
+</div>
+{% endblock %}

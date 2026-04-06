@@ -34,6 +34,7 @@
       <a class="btn btn-sm {% if section == 'vote_options' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('main.admin_vote_options', contest_id=year if year else None) }}">Stimmoptionen</a>
       <a class="btn btn-sm {% if section == 'categories' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('main.admin_categories', contest_id=year if year else None) }}">Kategorien</a>
       <a class="btn btn-sm {% if section == 'themes' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('main.admin_themes') }}">Themes</a>
+      <a class="btn btn-sm {% if section == 'files' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{{ url_for('main.admin_files') }}">Dateien</a>
       <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.upload', contest_id=year if year else None) }}">Upload</a>
       <a class="btn btn-sm btn-outline-dark" href="{{ url_for('main.results', contest_id=year if year else None) }}">Results</a>
   </div>
