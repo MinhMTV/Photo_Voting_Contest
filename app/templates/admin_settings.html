@@ -56,6 +56,42 @@
 <div class="content-card p-3 mb-3">
   <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
     <div>
+      <div class="section-title mb-2">Admin-Login</div>
+      <div class="text-secondary small">
+        Self-Hosted startet standardmäßig mit <span class="mono">admin123</span>. Danach kannst du hier dein eigenes Admin-Passwort setzen, ohne die Container-Umgebung anfassen zu müssen.
+      </div>
+    </div>
+    {% if admin_uses_default_password %}
+    <span class="badge text-bg-warning">Default-Passwort aktiv</span>
+    {% else %}
+    <span class="badge text-bg-success">Eigenes Passwort aktiv</span>
+    {% endif %}
+  </div>
+  <form method="post" class="row g-3 align-items-end">
+    <input type="hidden" name="action" value="save_admin_password">
+    {% if not admin_uses_default_password %}
+    <div class="col-md-4">
+      <label class="form-label">Aktuelles Passwort</label>
+      <input class="form-control" type="password" name="current_admin_password" autocomplete="current-password">
+    </div>
+    {% endif %}
+    <div class="col-md-4">
+      <label class="form-label">Neues Passwort</label>
+      <input class="form-control" type="password" name="new_admin_password" autocomplete="new-password" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Neues Passwort wiederholen</label>
+      <input class="form-control" type="password" name="confirm_admin_password" autocomplete="new-password" required>
+    </div>
+    <div class="col-12">
+      <button class="btn btn-outline-dark btn-sm" type="submit">Admin-Passwort speichern</button>
+    </div>
+  </form>
+</div>
+
+<div class="content-card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+    <div>
       <div class="section-title mb-2">Backups</div>
       <div class="text-secondary small">Manuelle Backups bleiben verfügbar. Zusätzlich erstellt die App nach Contest-Ende automatisch genau ein Backup pro Contest. Beim Restore wird vorher automatisch noch ein Sicherheits-Backup erstellt.</div>
     </div>

@@ -10,6 +10,7 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, current_app, jsonify, send_from_directory, flash, send_file
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 try:
     from .db import close_db, get_db
@@ -691,6 +692,29 @@ def set_app_setting(key: str, value: str):
         (key, str(value), datetime.now().isoformat()),
     )
     db.commit()
+
+
+def stored_admin_password_hash() -> str:
+    return str(get_app_setting("admin_password_hash", "") or "").strip()
+
+
+def admin_uses_default_password() -> bool:
+    return not stored_admin_password_hash()
+
+
+def verify_admin_password(password: str) -> bool:
+    raw = str(password or "")
+    password_hash = stored_admin_password_hash()
+    if password_hash:
+        try:
+            return check_password_hash(password_hash, raw)
+        except Exception:
+            return False
+    return raw == str(current_app.config.get("ADMIN_PASSWORD") or "admin123")
+
+
+def save_admin_password(password: str) -> None:
+    set_app_setting("admin_password_hash", generate_password_hash(str(password or "").strip()))
 
 
 def results_reveal_version(year: int) -> str:
@@ -2030,10 +2054,10 @@ def react(image_id):
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        if request.form["password"] == current_app.config["ADMIN_PASSWORD"]:
+        if verify_admin_password(request.form["password"]):
             session["admin"] = True
             return redirect(url_for("main.upload"))
-    return render_template("login.html")
+    return render_template("login.html", default_admin_password=admin_uses_default_password())
 
 
 @bp.route("/logout")
@@ -2128,6 +2152,21 @@ def admin_settings():
         elif action == "disconnect_google_drive":
             clear_google_drive_connection()
             flash("Google Drive wurde getrennt.", "success")
+
+        elif action == "save_admin_password":
+            current_password = (request.form.get("current_admin_password") or "").strip()
+            new_password = (request.form.get("new_admin_password") or "").strip()
+            confirm_password = (request.form.get("confirm_admin_password") or "").strip()
+
+            if len(new_password) < 4:
+                flash("Das neue Admin-Passwort muss mindestens 4 Zeichen lang sein.", "warning")
+            elif new_password != confirm_password:
+                flash("Die neuen Passwort-Felder stimmen nicht überein.", "warning")
+            elif not admin_uses_default_password() and not verify_admin_password(current_password):
+                flash("Das aktuelle Admin-Passwort stimmt nicht.", "danger")
+            else:
+                save_admin_password(new_password)
+                flash("Admin-Passwort gespeichert. Ab jetzt gilt nicht mehr der Default `admin123`.", "success")
 
         elif action == "create_contest":
             title = (request.form.get("title") or "").strip() or "Neuer Contest"
@@ -2306,6 +2345,7 @@ def admin_settings():
         google_drive_configured=google_drive_is_configured(),
         google_drive_backups=drive_backups,
         google_drive_error=drive_error,
+        admin_uses_default_password=admin_uses_default_password(),
         vote_modes=["single_vote", "multi_vote", "unique_options"],
         theme_options=available_theme_ids(),
     )

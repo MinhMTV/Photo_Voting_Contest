@@ -23,6 +23,11 @@
 
     <div class="login-box">
         <h2 class="text-center mb-4">🔒 Admin Login</h2>
+        {% if default_admin_password %}
+        <div class="alert alert-warning py-2 small">
+            Self-Hosted-Startpasswort: <strong>admin123</strong>. Bitte nach dem ersten Login im Admin-Bereich ändern.
+        </div>
+        {% endif %}
         <form method="POST">
             <div class="mb-3">
                 <label for="password" class="form-label">Passwort</label>
