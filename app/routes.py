@@ -1369,6 +1369,16 @@ def waiting_text_for_year(year: int) -> str:
     return txt or "Die Abstimmung läuft noch. Ergebnisse werden nach Freigabe veröffentlicht."
 
 
+def contest_release_reached(contest: dict | None) -> bool:
+    if not contest:
+        return False
+    end_at = _parse_contest_datetime(contest.get("end_at"))
+    if not end_at:
+        return False
+    now = datetime.now(end_at.tzinfo) if end_at.tzinfo else datetime.now()
+    return now >= end_at
+
+
 @bp.route("/admin/google-drive/connect")
 def google_drive_oauth_connect():
     if not session.get("admin"):
@@ -1438,7 +1448,7 @@ def google_drive_oauth_callback():
 
 def is_published(year: int) -> bool:
     c = get_contest(year)
-    return bool(c and int(c.get("published") or 0) == 1)
+    return bool(c and (int(c.get("published") or 0) == 1 or contest_release_reached(c)))
 
 
 def set_published(year: int, published: bool):
@@ -1961,7 +1971,19 @@ def _render_public_waiting(year: int):
     contest = get_contest(year)
     if not contest:
         return redirect(url_for("main.root"))
-    return render_template(themed_template("public_waiting", contest), year=year, contest=contest, waiting_text=waiting_text_for_year(year))
+    db = get_db()
+    participant_count = db.execute(
+        "SELECT COUNT(*) FROM images WHERE contest_id = ? AND visible = 1",
+        (year,),
+    ).fetchone()[0]
+    return render_template(
+        themed_template("public_waiting", contest),
+        year=year,
+        contest=contest,
+        waiting_text=waiting_text_for_year(year),
+        participant_count=participant_count,
+        reveal_at_iso=str(contest.get("end_at") or "").strip(),
+    )
 
 
 @bp.route("/public-waiting/<int:year>")

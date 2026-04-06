@@ -264,7 +264,7 @@
         }
         .countdown{
             display:grid;
-            grid-template-columns:repeat(3, 1fr);
+            grid-template-columns:repeat(4, 1fr);
             gap:10px;
         }
         .count-card{
@@ -357,7 +357,7 @@
                     {% if contest_start_date(contest) %}
                     <div class="status-pill">Start {{ contest_start_date(contest) }}</div>
                     {% endif %}
-                    <div class="status-pill">Nur noch ein paar dramatische Sekunden</div>
+                    <div class="status-pill">{{ participant_count or 0 }} Teilnehmende im Ranking</div>
                 </div>
 
                 <div class="wait-copy">
@@ -366,10 +366,11 @@
                 </div>
 
                 <div class="chips">
-                    <div class="chip">5 Chips Nervenkitzel</div>
-                    <div class="chip">25 Chips Drama</div>
-                    <div class="chip">50 Chips Gerüchteküche</div>
-                    <div class="chip">100 Chips Finale</div>
+                    <div class="chip">5 Chips: Joa, solide Runde</div>
+                    <div class="chip">25 Chips: Okay, da glaubt jemand dran</div>
+                    <div class="chip">50 Chips: Jetzt wird's persönlich</div>
+                    <div class="chip">100 Chips: Das ist schon fast Propaganda</div>
+                    <div class="chip">All-in: kompletter Realitätsverlust</div>
                 </div>
             </div>
         </section>
@@ -384,16 +385,20 @@
 
                 <div class="countdown">
                     <div class="count-card">
-                        <span class="count-value">36</span>
-                        <span class="count-label">Felder</span>
+                        <span class="count-value">{{ participant_count or 0 }}</span>
+                        <span class="count-label">Teilnehmende</span>
                     </div>
                     <div class="count-card">
                         <span class="count-value">1</span>
                         <span class="count-label">Finale</span>
                     </div>
                     <div class="count-card">
-                        <span class="count-value">∞</span>
-                        <span class="count-label">Gerüchte</span>
+                        <span class="count-value">{{ contest_display_year(contest) }}</span>
+                        <span class="count-label">Saison</span>
+                    </div>
+                    <div class="count-card">
+                        <span class="count-value" id="countdownValue">--:--</span>
+                        <span class="count-label">Reveal in</span>
                     </div>
                 </div>
 
@@ -412,5 +417,44 @@
         </aside>
     </div>
 </div>
+<script>
+(() => {
+    const revealAtRaw = {{ reveal_at_iso|tojson }};
+    const el = document.getElementById('countdownValue');
+    if (!el || !revealAtRaw) {
+        if (el) el.textContent = 'bald';
+        return;
+    }
+
+    const target = new Date(revealAtRaw);
+    if (Number.isNaN(target.getTime())) {
+        el.textContent = 'bald';
+        return;
+    }
+
+    function tick() {
+        const now = new Date();
+        let diff = target.getTime() - now.getTime();
+        if (diff <= 0) {
+            el.textContent = 'jetzt';
+            return;
+        }
+        const totalSeconds = Math.floor(diff / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (days > 0) {
+            el.textContent = `${days}d ${hours}h`;
+        } else {
+            el.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        requestAnimationFrame(() => setTimeout(tick, 1000));
+    }
+
+    tick();
+})();
+</script>
 </body>
 </html>
