@@ -1971,6 +1971,13 @@ def _render_public_waiting(year: int):
     contest = get_contest(year)
     if not contest:
         return redirect(url_for("main.root"))
+    return render_template(themed_template("public_waiting", contest), **public_waiting_context(year, contest))
+
+
+def public_waiting_context(year: int, contest: dict | None = None) -> dict:
+    contest = contest or get_contest(year)
+    if not contest:
+        return {"year": year, "contest": None, "waiting_text": waiting_text_for_year(year)}
     db = get_db()
     participant_count = db.execute(
         "SELECT COUNT(*) FROM images WHERE contest_id = ? AND visible = 1",
@@ -2037,21 +2044,20 @@ def _render_public_waiting(year: int):
             }
         )
     vote_stats.sort(key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
-    return render_template(
-        themed_template("public_waiting", contest),
-        year=year,
-        contest=contest,
-        waiting_text=waiting_text_for_year(year),
-        participant_count=participant_count,
-        category_count=category_count,
-        voter_count=voter_count,
-        total_chip_votes=total_chip_votes,
-        duel_spin_count=duel_spin_count,
-        duel_image_slots=duel_spin_count * 3,
-        reaction_stats=reaction_stats,
-        vote_stats=vote_stats,
-        reveal_at_iso=str(contest.get("end_at") or "").strip(),
-    )
+    return {
+        "year": year,
+        "contest": contest,
+        "waiting_text": waiting_text_for_year(year),
+        "participant_count": participant_count,
+        "category_count": category_count,
+        "voter_count": voter_count,
+        "total_chip_votes": total_chip_votes,
+        "duel_spin_count": duel_spin_count,
+        "duel_image_slots": duel_spin_count * 3,
+        "reaction_stats": reaction_stats,
+        "vote_stats": vote_stats,
+        "reveal_at_iso": str(contest.get("end_at") or "").strip(),
+    }
 
 
 @bp.route("/public-waiting/<int:year>")
@@ -3275,7 +3281,7 @@ def _render_public_results(year: int):
     block_all = get_app_setting("block_public_unpublished_all_contests", "0") == "1"
     admin_preview = bool(session.get("admin")) and (request.args.get("preview") == "1")
     if not admin_preview and ((block_all and not published) or (year == current_year() and not published)):
-        return render_template(themed_template("public_waiting", contest), year=year, contest=contest, waiting_text=waiting_text_for_year(year))
+        return render_template(themed_template("public_waiting", contest), **public_waiting_context(year, contest))
 
     ranking_rows = _calc_ranking(year, visible_only=True)
     category_rankings = _calc_category_rankings(year, visible_only=True)

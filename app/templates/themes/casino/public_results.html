@@ -634,11 +634,7 @@ function detailHtmlForItem(item) {
       </div>
       <div class="detail-box">
         <div class="fw-semibold mb-2">Kategorien</div>
-        <ul>${reactionSummary || '<li>Keine Kategorien</li>'}</ul>
-      </div>
-      <div class="detail-box">
-        <div class="fw-semibold mb-2">Kategorie-Details</div>
-        <ul>${reactionBreakdown.length ? reactionBreakdown.map((reaction) => `<li>${reaction.label}: ${reaction.count}x | ${reaction.total_points} Punkte</li>`).join('') : '<li>Keine Reaktionen</li>'}</ul>
+        <ul>${reactionBreakdown.length ? reactionBreakdown.map((reaction) => `<li>${reaction.label}: ${reaction.count}x | ${reaction.total_points} Punkte</li>`).join('') : (reactionSummary || '<li>Keine Kategorien</li>')}</ul>
       </div>
     </div>`;
 }
