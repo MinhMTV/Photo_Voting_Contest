@@ -1187,6 +1187,21 @@ def delete_runtime_backup(filename: str) -> tuple[bool, str]:
         return False, f"Backup konnte nicht gelöscht werden: {exc}"
 
 
+def prune_runtime_backups_keep_latest() -> tuple[bool, str]:
+    backups = list_runtime_backups(limit=1000)
+    if len(backups) <= 1:
+        return True, "Es gibt nichts aufzuräumen. Das neueste Backup bleibt bereits erhalten."
+    deleted = 0
+    for row in backups[1:]:
+        backup_path = os.path.join(backup_root_folder(), row["filename"])
+        try:
+            os.remove(backup_path)
+            deleted += 1
+        except OSError:
+            continue
+    return True, f"{deleted} Backup(s) gelöscht. Das neueste Backup bleibt erhalten."
+
+
 def delete_google_drive_backup(file_id: str, filename: str = "") -> tuple[bool, str]:
     file_id = str(file_id or "").strip()
     if not file_id:
@@ -1930,7 +1945,16 @@ def contest_slug(slug: str):
 
 @bp.route("/archive")
 def archive():
-    return render_template("archive.html", contests=list_contests())
+    now = datetime.now()
+    contests = []
+    for contest in list_contests():
+        is_active = int(contest.get("is_active") or 0) == 1
+        end_at = _parse_contest_datetime(contest.get("end_at"))
+        is_finished = bool(end_at and end_at <= (datetime.now(end_at.tzinfo) if end_at.tzinfo else now))
+        if is_active and not is_finished:
+            continue
+        contests.append(contest)
+    return render_template("archive.html", contests=contests)
 
 
 def _render_public_waiting(year: int):
@@ -2222,6 +2246,10 @@ def admin_settings():
         elif action == "delete_backup":
             backup_name = (request.form.get("backup_name") or "").strip()
             ok, message = delete_runtime_backup(backup_name)
+            flash(message, "success" if ok else "danger")
+
+        elif action == "prune_backups_keep_latest":
+            ok, message = prune_runtime_backups_keep_latest()
             flash(message, "success" if ok else "danger")
 
         elif action == "save_google_drive":

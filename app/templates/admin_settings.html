@@ -95,10 +95,16 @@
       <div class="section-title mb-2">Backups</div>
       <div class="text-secondary small">Manuelle Backups bleiben verfügbar. Zusätzlich erstellt die App nach Contest-Ende automatisch genau ein Backup pro Contest. Beim Restore wird vorher automatisch noch ein Sicherheits-Backup erstellt.</div>
     </div>
-    <form method="post">
-      <input type="hidden" name="action" value="create_backup">
-      <button class="btn btn-outline-primary btn-sm" type="submit">Backup jetzt erstellen</button>
-    </form>
+    <div class="d-flex gap-2 flex-wrap">
+      <form method="post">
+        <input type="hidden" name="action" value="create_backup">
+        <button class="btn btn-outline-primary btn-sm" type="submit">Backup jetzt erstellen</button>
+      </form>
+      <form method="post" onsubmit="return confirm('Wirklich alle lokalen Backups außer dem neuesten löschen?');">
+        <input type="hidden" name="action" value="prune_backups_keep_latest">
+        <button class="btn btn-outline-danger btn-sm" type="submit">Alle bis auf das letzte löschen</button>
+      </form>
+    </div>
   </div>
 
   <div class="backup-item mb-3">

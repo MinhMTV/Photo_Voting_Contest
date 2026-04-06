@@ -93,15 +93,9 @@ def create_app():
             return "#"
         slug = str((contest.get("slug") if hasattr(contest, "get") else "") or "").strip()
         contest_id = contest.get("id") if hasattr(contest, "get") else None
-        params = {}
-        if session.get("admin"):
-            params["preview"] = 1
-            preview_theme = str(request.args.get("theme_preview") or "").strip()
-            if preview_theme:
-                params["theme_preview"] = preview_theme
         if slug:
-            return url_for("main.contest_slug", slug=slug, **params)
-        return url_for("main.contest_year", year=contest_id, **params)
+            return url_for("main.contest_slug", slug=slug)
+        return url_for("main.contest_year", year=contest_id)
 
     def contest_results_url(contest) -> str:
         if not contest:
@@ -117,15 +111,9 @@ def create_app():
             return "#"
         slug = str((contest.get("slug") if hasattr(contest, "get") else "") or "").strip()
         contest_id = contest.get("id") if hasattr(contest, "get") else None
-        params = {}
-        if session.get("admin"):
-            params["preview"] = 1
-            preview_theme = str(request.args.get("theme_preview") or "").strip()
-            if preview_theme:
-                params["theme_preview"] = preview_theme
         if slug:
-            return url_for("main.public_waiting_slug", slug=slug, **params)
-        return url_for("main.public_waiting_preview", year=contest_id, **params)
+            return url_for("main.public_waiting_slug", slug=slug)
+        return url_for("main.public_waiting_preview", year=contest_id)
 
     @app.context_processor
     def inject_contest_helpers():
