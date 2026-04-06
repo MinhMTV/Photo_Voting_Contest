@@ -63,8 +63,8 @@ FLASK_APP=${FLASK_APP:-run.py}
 FLASK_ENV=${FLASK_ENV:-production}
 FLASK_RUN_HOST=${FLASK_RUN_HOST:-0.0.0.0}
 FLASK_RUN_PORT=${FLASK_RUN_PORT:-5050}
-ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
-SECRET_KEY=${SECRET_KEY:-changeme}
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+SECRET_KEY=${SECRET_KEY:-dev123}
 EOF
 else
   echo "✅ .env Datei existiert – wird nicht überschrieben."

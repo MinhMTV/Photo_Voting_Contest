@@ -28,6 +28,11 @@
             Self-Hosted-Startpasswort: <strong>admin123</strong>. Bitte nach dem ersten Login im Admin-Bereich ändern.
         </div>
         {% endif %}
+        {% if error_message %}
+        <div class="alert alert-danger py-2 small">
+            {{ error_message }}
+        </div>
+        {% endif %}
         <form method="POST">
             <div class="mb-3">
                 <label for="password" class="form-label">Passwort</label>

@@ -2053,11 +2053,13 @@ def react(image_id):
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
+    error_message = ""
     if request.method == "POST":
         if verify_admin_password(request.form["password"]):
             session["admin"] = True
             return redirect(url_for("main.upload"))
-    return render_template("login.html", default_admin_password=admin_uses_default_password())
+        error_message = "Passwort stimmt nicht."
+    return render_template("login.html", default_admin_password=admin_uses_default_password(), error_message=error_message)
 
 
 @bp.route("/logout")
