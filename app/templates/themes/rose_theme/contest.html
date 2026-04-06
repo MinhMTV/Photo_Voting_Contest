@@ -1,137 +1,237 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ contest.title }} - Voting</title>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root{
-      --rose-1:#fff4f7;
-      --rose-2:#ffe3ec;
-      --rose-3:#ffc2d1;
-      --rose-4:#ff8fab;
-      --rose-5:#9d4d68;
-      --rose-6:#5c2436;
-      --line:rgba(157,77,104,.18);
-      --shadow:0 18px 40px rgba(157,77,104,.18);
+      --rose-bg-1:#ff5c8d;
+      --rose-bg-2:#ff8d99;
+      --rose-card:#ffffff;
+      --rose-text:#4f2434;
+      --rose-accent:#ff4b5c;
+      --rose-soft:#fff0f4;
+      --rose-line:rgba(255,75,92,.18);
+      --shadow:0 18px 36px rgba(114,26,55,.16);
     }
     body{
+      padding-top:88px;
+      background:linear-gradient(to right, var(--rose-bg-1), var(--rose-bg-2));
       min-height:100vh;
-      background:
-        radial-gradient(circle at 10% 10%, rgba(255,255,255,.8), transparent 22%),
-        radial-gradient(circle at 90% 0%, rgba(255,255,255,.45), transparent 18%),
-        linear-gradient(135deg, #ffeaf1 0%, #ffd6e1 48%, #ffc2d1 100%);
-      color:var(--rose-6);
+      overflow-x:hidden;
+      color:var(--rose-text);
+      position:relative;
     }
     .shell{
       max-width:1240px;
       margin:0 auto;
-      padding:28px 16px 40px;
+      padding:0 14px 36px;
+      position:relative;
+      z-index:2;
     }
-    .hero,
-    .cardx{
-      background:rgba(255,255,255,.78);
-      border:1px solid var(--line);
-      border-radius:24px;
-      box-shadow:var(--shadow);
+    .top-lottie{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      pointer-events:none;
+      object-fit:cover;
+      opacity:.58;
+    }
+    .mobile-lottie{
+      display:none;
+    }
+    @media (max-width:768px){
+      .desktop-lottie{ display:none; }
+      .mobile-lottie{ display:block; }
+    }
+    .topbar{
+      background:rgba(255,255,255,.92)!important;
       backdrop-filter:blur(10px);
+      box-shadow:0 12px 28px rgba(79,36,52,.12);
     }
-    .hero{
-      padding:22px 24px;
+    .topbar .navbar-brand{
+      font-weight:800;
+      color:var(--rose-text);
+    }
+    .hero-card,
+    .image-box,
+    .option-card{
+      background:rgba(255,255,255,.94);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow:var(--shadow);
+    }
+    .hero-card{
+      border-radius:22px;
+      padding:16px 18px;
       margin-bottom:18px;
     }
-    .title-kicker{
-      font-size:.82rem;
+    .hero-kicker{
+      font-size:.8rem;
       text-transform:uppercase;
-      letter-spacing:.16em;
-      color:var(--rose-5);
+      letter-spacing:.14em;
       font-weight:800;
+      color:#ab3e61;
     }
-    .muted{ color:#8e6676; }
-    .soft-badge{
+    .soft-pill{
       display:inline-flex;
       align-items:center;
       gap:8px;
       padding:8px 14px;
       border-radius:999px;
-      background:rgba(255,143,171,.12);
-      border:1px solid rgba(255,143,171,.24);
-      color:var(--rose-5);
+      background:var(--rose-soft);
+      border:1px solid var(--rose-line);
       font-weight:700;
+      color:#9a304f;
     }
-    .btn-soft{
-      border-radius:999px;
-      border:1px solid rgba(157,77,104,.2);
-      background:rgba(255,255,255,.72);
-      color:var(--rose-6);
-    }
-    .btn-soft:hover{
-      background:rgba(255,255,255,.95);
-      color:var(--rose-6);
-      border-color:rgba(157,77,104,.32);
-    }
-    .btn-accent{
-      border-radius:999px;
-      border:none;
-      background:linear-gradient(135deg, #ff8fab, #fb6f92);
-      color:#fff;
-      box-shadow:0 12px 24px rgba(251,111,146,.24);
-    }
-    .btn-accent:hover{
-      color:#fff;
-      filter:brightness(.98);
+    .option-card{
+      border-radius:20px;
+      padding:14px 16px;
+      margin-bottom:18px;
     }
     .option-bar{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
     }
-    .vote-btn{
+    .vote-option-btn{
       border-radius:999px;
-      border:1px solid rgba(157,77,104,.22);
+      border:1px solid var(--rose-line);
       background:#fff;
-      color:var(--rose-6);
+      color:var(--rose-text);
       display:inline-flex;
       align-items:center;
       gap:8px;
-      padding:.45rem .85rem;
+      padding:.5rem .95rem;
+      font-weight:700;
+      transition:transform .18s ease, box-shadow .18s ease, background-color .18s ease;
     }
-    .vote-btn.active{
-      background:linear-gradient(135deg, #ff8fab, #fb6f92);
-      border-color:#fb6f92;
+    .vote-option-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 8px 18px rgba(255,75,92,.14);
+    }
+    .vote-option-btn.active{
+      background:linear-gradient(135deg, #ff6c93, #ff4b5c);
       color:#fff;
-      box-shadow:0 10px 20px rgba(251,111,146,.25);
+      border-color:transparent;
+      box-shadow:0 12px 24px rgba(255,75,92,.24);
     }
-    .vote-btn img{
-      height:20px;
+    .vote-option-btn img{
       width:20px;
+      height:20px;
       object-fit:cover;
       border-radius:6px;
     }
-    .img-wrap{
-      cursor:pointer;
+    .limit-info{
       border-radius:18px;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow:var(--shadow);
+      color:#7b324b;
+    }
+    .image-box{
+      position:relative;
+      border-radius:18px;
+      padding:12px;
+      text-align:center;
       overflow:hidden;
-      background:#f7dfe7;
-      box-shadow:inset 0 0 0 1px rgba(157,77,104,.08);
+      height:100%;
+      transition:transform .18s ease;
     }
-    .img-wrap img{
+    .image-box:hover{
+      transform:translateY(-2px);
+    }
+    .image-box img.gallery-image{
       width:100%;
-      height:240px;
+      height:320px;
       object-fit:cover;
-      transition:transform .2s ease;
+      border-radius:14px;
+      opacity:0;
+      animation:fadeIn 1s forwards;
+      cursor:pointer;
     }
-    .img-wrap:hover img{ transform:scale(1.02); }
+    @keyframes fadeIn {
+      to { opacity:1; }
+    }
+    .image-box p{
+      word-wrap:break-word;
+      overflow-wrap:break-word;
+      white-space:normal;
+      margin-bottom:.5rem;
+    }
+    .vote-button{
+      position:absolute;
+      bottom:18px;
+      right:18px;
+      z-index:10;
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      border:none;
+      font-size:20px;
+      line-height:1;
+      transform:scale(.8);
+      opacity:0;
+      animation:zoomIn .4s ease-in forwards;
+      animation-delay:1s;
+      box-shadow:0 10px 22px rgba(255,75,92,.26);
+      background-color:var(--rose-accent);
+      color:#fff;
+    }
+    .vote-button.is-outline{
+      background:#fff;
+      border:2px solid var(--rose-accent);
+      color:var(--rose-accent);
+      box-shadow:none;
+    }
+    @keyframes zoomIn {
+      to {
+        transform:scale(1);
+        opacity:1;
+      }
+    }
+    .voted{
+      opacity:.82;
+    }
+    .btn-pink{
+      transition:transform .25s ease, background-color .25s ease;
+    }
+    .btn-pink:hover{
+      transform:scale(1.05);
+    }
+    .uploader-name{
+      font-weight:800;
+      color:var(--rose-text);
+      margin-top:.9rem;
+      margin-bottom:.25rem;
+    }
+    .desc{
+      color:#744151;
+      min-height:46px;
+    }
+    .reaction-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:center;
+      margin-top:8px;
+    }
     .reaction-btn{
       border-radius:999px;
-      border:1px solid rgba(157,77,104,.18);
-      background:rgba(255,255,255,.92);
-      color:var(--rose-6);
+      border:1px solid var(--rose-line);
+      background:rgba(255,255,255,.94);
+      color:var(--rose-text);
+      font-size:.82rem;
+      padding:.35rem .7rem;
     }
     .reaction-btn.active{
-      background:#fff0f4;
-      border-color:#fb6f92;
+      background:var(--rose-soft);
+      border-color:#ff6c93;
       color:#b33659;
       font-weight:700;
     }
@@ -142,42 +242,86 @@
       border-radius:4px;
       margin-right:4px;
     }
-    .uploader{
-      font-weight:800;
-      color:var(--rose-6);
+    .lottie-container{
+      position:absolute;
+      width:100px;
+      height:100px;
+      z-index:1000;
+      pointer-events:none;
     }
-    @media (max-width: 768px){
-      .hero,
-      .cardx{ border-radius:20px; }
-      .img-wrap img{ height:220px; }
+    #rabbit{
+      width:50px;
+      height:50px;
+      background-image:url('https://img.icons8.com/?size=100&id=6n6VZ02KZwP1&format=png&color=000000');
+      background-size:contain;
+      background-repeat:no-repeat;
+      position:fixed;
+      z-index:1;
+      pointer-events:none;
+    }
+    .sticker-wrapper{ position:relative; }
+    .gallery-sticker{
+      position:absolute;
+      width:80px;
+      height:auto;
+      z-index:10;
+      pointer-events:none;
+      animation:floaty 6s ease-in-out infinite;
+      opacity:.9;
+    }
+    @media (max-width:768px){
+      .gallery-sticker{ width:50px; }
+      .image-box img.gallery-image{ height:260px; }
+    }
+    @keyframes floaty {
+      0% { transform:translate(-50%, -50%) rotate(0deg); }
+      50% { transform:translate(-50%, -60%) rotate(1deg); }
+      100% { transform:translate(-50%, -50%) rotate(-1deg); }
     }
   </style>
 </head>
 <body>
+
+<dotlottie-player src="https://lottie.host/5d3d1cee-45d1-4e0f-b331-0856cfc0745d/DyvU7PMf2v.lottie" class="top-lottie desktop-lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+<dotlottie-player src="https://lottie.host/531c9c96-58a0-4053-871c-8d3fe0a4476b/n5EMg6SkHn.lottie" class="top-lottie mobile-lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+
+<nav class="navbar navbar-light fixed-top topbar">
+  <div class="container-fluid d-flex justify-content-between align-items-center gap-2">
+    <span class="navbar-brand mb-0 h1">🖼️ {{ contest.title }}</span>
+    <div class="d-flex gap-2">
+      <a href="{{ contest_results_url(contest) }}" class="btn btn-outline-primary btn-sm btn-pink">📊 Ergebnisse</a>
+      <a href="{{ url_for('main.login') }}" class="btn btn-outline-secondary btn-sm btn-pink">🔐 Admin Login</a>
+    </div>
+  </div>
+</nav>
+
+<div id="rabbit"></div>
+
 <div class="shell">
-  <div class="hero">
-    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+  <div class="hero-card">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
-        <div class="title-kicker">Rose Theme Preview</div>
+        <div class="hero-kicker">Rose Theme</div>
         <h1 class="h3 mb-1">{{ contest.title }}</h1>
-        <div class="muted">Modus: {{ year_cfg.vote_mode }} · Maximal {{ year_cfg.max_actions }} {{ year_cfg.unit_name }}</div>
+        <div class="text-muted">
+          {{ contest_start_date(contest) if contest.start_at else '' }}
+          {% if contest.start_at and year_cfg.max_actions %}·{% endif %}
+          Du hast aktuell <strong id="votesLeftInline">{{ votes_left }}</strong> von {{ year_cfg.max_actions }} {{ year_cfg.unit_name }} übrig.
+        </div>
       </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <a class="btn btn-sm btn-soft" href="{{ url_for('main.archive') }}">Archiv</a>
-        <a class="btn btn-sm btn-accent" href="{{ contest_results_url(contest) }}">Ergebnisse</a>
-        <a class="btn btn-sm btn-soft" href="{{ url_for('main.login') }}">Admin</a>
-      </div>
+      <div class="soft-pill">Verbleibend: <strong id="votesLeft">{{ votes_left }}</strong> von {{ year_cfg.max_actions }}</div>
     </div>
   </div>
 
-  <div class="cardx p-3 p-md-4 mb-3">
-    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
-      <div class="soft-badge">Verbleibend: <strong id="votesLeft">{{ votes_left }}</strong></div>
-      <div class="muted small">Die Gestaltung kommt aus dem Theme, die Stimmoptionen selbst aus dem Contest.</div>
+  {% if vote_options|length > 1 %}
+  <div class="option-card">
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
+      <div class="fw-semibold">Stimmoption auswählen</div>
+      <button class="btn btn-outline-secondary btn-sm" id="resetVotesBtn">Stimmen zurücksetzen</button>
     </div>
     <div class="option-bar" id="optionBar">
       {% for opt in vote_options %}
-      <button type="button" class="btn btn-sm vote-btn" data-key="{{ opt.opt_key }}">
+      <button type="button" class="vote-option-btn" data-key="{{ opt.opt_key }}">
         {% if opt.display_type == 'image' and opt.image_filename %}
           <img src="{{ url_for('main.asset_year', year=year, filename=opt.image_filename) }}" alt="{{ opt.label }}">
         {% else %}
@@ -186,98 +330,329 @@
         {{ opt.label }}
       </button>
       {% endfor %}
-      <button class="btn btn-sm btn-soft" id="resetVotesBtn">Stimmen zurücksetzen</button>
     </div>
   </div>
+  {% else %}
+  <div class="d-flex justify-content-end mb-3">
+    <button class="btn btn-outline-secondary btn-sm" id="resetVotesBtn">Stimmen zurücksetzen</button>
+  </div>
+  {% endif %}
 
-  <div class="row g-3">
-    {% for image in images %}
-    <div class="col-12 col-sm-6 col-lg-4">
-      <div class="cardx p-3 h-100">
-        <div class="img-wrap mb-2" data-image-id="{{ image.id }}">
-          <img src="{{ url_for('main.media_year', year=year, filename=image.filename) }}" alt="Bild">
-        </div>
-        <div class="uploader">{{ image.uploader or 'Anonymous' }}</div>
-        <div class="small muted mb-2">{{ image.description or '' }}</div>
+  <div class="alert alert-info text-center mb-4 limit-info">
+    Du hast noch <strong id="votesLeftAlert">{{ votes_left }}</strong> von {{ year_cfg.max_actions }} Stimmen verfügbar.
+  </div>
 
-        <div class="d-flex flex-wrap gap-2">
-          {% for r in reaction_options %}
-          <button class="btn btn-sm reaction-btn {% if r.reaction_key in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="{{ r.reaction_key }}">
-            {% if r.display_type == 'image' and r.image_filename %}
-              <img src="{{ url_for('main.asset_year', year=year, filename=r.image_filename) }}">
-            {% else %}
-              {{ r.icon or '' }}
-            {% endif %}
-            {{ r.label }}
+  <div class="container-fluid px-0 py-2">
+    <div class="row">
+      {% for image in images %}
+      <div class="col-12 col-sm-6 col-md-4 mb-4">
+        <div class="image-box position-relative {% if image.id in voted_ids %}voted{% endif %}" id="image-box-{{ image.id }}">
+          <img
+            class="gallery-image"
+            src="{{ url_for('main.media_year', year=year, filename=image.filename) }}"
+            alt="Bild"
+            data-bs-toggle="modal"
+            data-bs-target="#imageModal_{{ image.id }}"
+          >
+
+          <button
+            class="vote-button {% if image.id in voted_ids %}is-outline{% endif %}"
+            data-image-id="{{ image.id }}"
+            data-voted="{{ 'true' if image.id in voted_ids else 'false' }}"
+          >
+            {% if image.id in voted_ids %}❤️{% else %}🤍{% endif %}
           </button>
-          {% endfor %}
+
+          {% if image.uploader %}
+          <p class="uploader-name">{{ image.uploader }}</p>
+          {% endif %}
+          {% if image.description %}
+          <p class="desc">{{ image.description }}</p>
+          {% endif %}
+
+          {% if reaction_options %}
+          <div class="reaction-row">
+            {% for r in reaction_options %}
+            <button class="btn btn-sm reaction-btn {% if r.reaction_key in (user_reactions.get(image.id|string, [])) %}active{% endif %}" data-image-id="{{ image.id }}" data-reaction="{{ r.reaction_key }}">
+              {% if r.display_type == 'image' and r.image_filename %}
+                <img src="{{ url_for('main.asset_year', year=year, filename=r.image_filename) }}" alt="{{ r.label }}">
+              {% else %}
+                {{ r.icon or '' }}
+              {% endif %}
+              {{ r.label }}
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
       </div>
+
+      <div class="modal fade" id="imageModal_{{ image.id }}" tabindex="-1" aria-labelledby="modalLabel_{{ image.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-body text-center">
+              <img
+                src="{{ url_for('main.media_year', year=year, filename=image.filename) }}"
+                alt="Zoom-Bild"
+                class="img-fluid mb-3"
+                style="max-height:80vh; object-fit:contain;"
+              >
+              {% if image.uploader %}
+              <h5 class="text-muted">{{ image.uploader }}</h5>
+              {% endif %}
+              {% if image.description %}
+              <p>{{ image.description }}</p>
+              {% endif %}
+            </div>
+            <div class="modal-footer justify-content-center">
+              <button type="button" class="btn btn-danger px-5" data-bs-dismiss="modal">Schließen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>
 
+<div class="modal fade" id="limitModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center border-3 border-danger">
+      <div class="modal-header bg-dark text-white justify-content-center">
+        <h1 class="modal-title w-100" style="font-size:2rem;">😡 HEY DU PENNER 😡</h1>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3 fw-semibold" style="font-size:1.1rem;">
+          Du hast <span class="text-danger fw-bold">alle {{ year_cfg.max_actions }} Stimmen</span> rausgeballert.<br>
+          Wenn du umstimmen willst, nimm erst eine bestehende Stimme zurück oder setz alles per Reset neu.
+        </p>
+        <button class="btn btn-outline-danger" data-bs-dismiss="modal">
+          🔁 Okay, ich wähl nochmal wie'n King
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
 <script>
-const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
-localStorage.setItem('voter_session_id', voterSessionId);
-document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
+document.addEventListener('DOMContentLoaded', function () {
+  const maxVotes = Number('{{ year_cfg.max_actions }}') || 1;
+  const voteButtons = Array.from(document.querySelectorAll('.vote-button'));
+  const optionButtons = Array.from(document.querySelectorAll('.vote-option-btn[data-key]'));
+  const reactionButtons = Array.from(document.querySelectorAll('.reaction-btn'));
+  const voterSessionId = localStorage.getItem('voter_session_id') || uuid.v4();
+  localStorage.setItem('voter_session_id', voterSessionId);
+  document.cookie = `voter_session_id=${encodeURIComponent(voterSessionId)}; path=/; max-age=31536000; samesite=lax`;
 
-let selectedKey = "{{ (vote_options[0].opt_key if vote_options else '') }}";
-let maxVotes = Number("{{ year_cfg.max_actions }}") || 1;
+  let isVotingInProgress = false;
+  let votedImages = new Set({{ voted_ids|tojson }});
+  let selectedKey = optionButtons.length ? optionButtons[0].dataset.key : '{{ (vote_options[0].opt_key if vote_options else "") }}';
 
-function setActiveOption(key){
-  selectedKey = key;
-  document.querySelectorAll('.vote-btn[data-key]').forEach(b => b.classList.toggle('active', b.dataset.key === key));
-}
-
-document.querySelectorAll('.vote-btn[data-key]').forEach(btn => btn.addEventListener('click', () => setActiveOption(btn.dataset.key)));
-setActiveOption(selectedKey);
-
-async function syncState(){
-  const r = await fetch(`/api/voter-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
-  const s = await r.json();
-  document.getElementById('votesLeft').textContent = s.votes_left ?? 0;
-}
-
-for (const card of document.querySelectorAll('.img-wrap[data-image-id]')){
-  card.addEventListener('click', async () => {
-    if (!selectedKey) return;
-    const imageId = card.dataset.imageId;
-    const r = await fetch(`/vote/${imageId}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({voter_session_id:voterSessionId, contest_year:{{ year }}, vote_option_key:selectedKey})
+  function updateVotesLeft(value) {
+    const targets = ['votesLeft', 'votesLeftInline', 'votesLeftAlert'];
+    targets.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
     });
-    const d = await r.json();
-    if (!d.success) { alert(d.error || 'Fehler'); return; }
-    await syncState();
-  });
-}
+  }
 
-for (const btn of document.querySelectorAll('.reaction-btn')){
-  btn.addEventListener('click', async () => {
-    const r = await fetch(`/react/${btn.dataset.imageId}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({voter_session_id:voterSessionId, contest_year:{{ year }}, reaction_type:btn.dataset.reaction})
+  function setActiveOption(key) {
+    selectedKey = key;
+    optionButtons.forEach((button) => {
+      button.classList.toggle('active', button.dataset.key === key);
     });
-    const d = await r.json();
-    if (!d.success) { alert(d.error || 'Fehler'); return; }
-    btn.classList.toggle('active', !!d.active);
-  });
-}
+  }
 
-document.getElementById('resetVotesBtn').addEventListener('click', async () => {
-  const r = await fetch(`/api/reset-votes/{{ year }}`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({voter_session_id:voterSessionId})
+  function updateVoteButton(button, voted) {
+    const imageBox = document.getElementById(`image-box-${button.dataset.imageId}`);
+    button.dataset.voted = voted ? 'true' : 'false';
+    button.textContent = voted ? '❤️' : '🤍';
+    button.classList.toggle('is-outline', voted);
+    if (imageBox) imageBox.classList.toggle('voted', voted);
+  }
+
+  function syncVoteUI(votedIds) {
+    votedImages = new Set((votedIds || []).map((value) => Number(value)));
+    voteButtons.forEach((button) => {
+      const imageId = Number(button.dataset.imageId);
+      updateVoteButton(button, votedImages.has(imageId));
+    });
+    updateVotesLeft(Math.max(0, maxVotes - votedImages.size));
+  }
+
+  async function fetchState() {
+    const response = await fetch(`/api/voter-state/{{ year }}?voter_session_id=${encodeURIComponent(voterSessionId)}`);
+    const state = await response.json();
+    syncVoteUI(state.voted_ids || []);
+    if (typeof state.votes_left !== 'undefined') updateVotesLeft(state.votes_left);
+    return state;
+  }
+
+  function showLottieAnimation(button) {
+    const rect = button.getBoundingClientRect();
+    const x = rect.left + window.scrollX + rect.width / 2;
+    const y = rect.top + window.scrollY + rect.height / 2;
+    const lottieContainer = document.createElement('div');
+    lottieContainer.className = 'lottie-container';
+    lottieContainer.style.left = `${x - 50}px`;
+    lottieContainer.style.top = `${y - 50}px`;
+    const iframe = document.createElement('iframe');
+    iframe.src = 'https://lottie.host/embed/dcc41816-9315-4098-9887-77d16ad21917/lC1fPNqDZE.lottie';
+    iframe.style.width = '100px';
+    iframe.style.height = '100px';
+    iframe.style.border = 'none';
+    lottieContainer.appendChild(iframe);
+    document.body.appendChild(lottieContainer);
+    setTimeout(() => lottieContainer.remove(), 4000);
+  }
+
+  optionButtons.forEach((button) => {
+    button.addEventListener('click', () => setActiveOption(button.dataset.key));
   });
-  const d = await r.json();
-  if (d.success) syncState();
+  if (selectedKey) setActiveOption(selectedKey);
+
+  voteButtons.forEach((button) => {
+    button.addEventListener('click', async function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (isVotingInProgress) return;
+
+      const imageId = Number(this.dataset.imageId);
+      const isAlreadyVoted = votedImages.has(imageId);
+      if (!isAlreadyVoted && votedImages.size >= maxVotes) {
+        const modal = new bootstrap.Modal(document.getElementById('limitModal'));
+        modal.show();
+        return;
+      }
+
+      isVotingInProgress = true;
+      try {
+        const response = await fetch(`/vote/${imageId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            voter_session_id: voterSessionId,
+            contest_year: {{ year }},
+            vote_option_key: selectedKey
+          })
+        });
+        const data = await response.json();
+        if (!data.success) {
+          alert(data.error || 'Fehler');
+          return;
+        }
+        if (!isAlreadyVoted) showLottieAnimation(this);
+        await fetchState();
+      } catch (error) {
+        alert('Fehler beim Abstimmen.');
+      } finally {
+        isVotingInProgress = false;
+      }
+    });
+  });
+
+  reactionButtons.forEach((button) => {
+    button.addEventListener('click', async function () {
+      try {
+        const response = await fetch(`/react/${this.dataset.imageId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            voter_session_id: voterSessionId,
+            contest_year: {{ year }},
+            reaction_type: this.dataset.reaction
+          })
+        });
+        const data = await response.json();
+        if (!data.success) {
+          alert(data.error || 'Fehler');
+          return;
+        }
+        this.classList.toggle('active', !!data.active);
+      } catch (error) {
+        alert('Fehler beim Reagieren.');
+      }
+    });
+  });
+
+  const resetVotesBtn = document.getElementById('resetVotesBtn');
+  if (resetVotesBtn) {
+    resetVotesBtn.addEventListener('click', async () => {
+      const response = await fetch(`/api/reset-votes/{{ year }}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voter_session_id: voterSessionId })
+      });
+      const data = await response.json();
+      if (data.success) fetchState();
+    });
+  }
+
+  function getRandomPosition(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  function moveRabbit() {
+    anime({
+      targets: '#rabbit',
+      translateX: getRandomPosition(0, screenWidth),
+      translateY: getRandomPosition(0, screenHeight),
+      duration: 2000,
+      easing: 'easeInOutQuad',
+      complete: moveRabbit
+    });
+  }
+  moveRabbit();
+
+  fetch('/api/stickers/{{ year }}')
+    .then((response) => response.json())
+    .then((stickerList) => {
+      const galleryItems = document.querySelectorAll('.image-box');
+      const maxStickers = 10;
+      const positions = [
+        { top: '0', left: '0', transform: 'translate(-20%, -20%)' },
+        { top: '0', right: '0', transform: 'translate(20%, -20%)' },
+        { bottom: '0', left: '0', transform: 'translate(-20%, 20%)' },
+        { bottom: '0', right: '0', transform: 'translate(20%, 20%)' },
+        { top: '0', left: '50%', transform: 'translate(-50%, -30%)' },
+        { top: '50%', left: '0', transform: 'translate(-30%, -50%)' },
+        { top: '50%', right: '0', transform: 'translate(30%, -50%)' }
+      ];
+
+      if (!galleryItems.length || !stickerList.length) return;
+
+      for (let i = 0; i < maxStickers; i++) {
+        const galleryItem = galleryItems[Math.floor(Math.random() * galleryItems.length)];
+        const stickerFile = stickerList[Math.floor(Math.random() * stickerList.length)];
+        const stickerImg = document.createElement('img');
+        stickerImg.src = `/sticker/{{ year }}/${stickerFile}`;
+        stickerImg.className = 'gallery-sticker';
+
+        const pos = positions[Math.floor(Math.random() * positions.length)];
+        Object.entries(pos).forEach(([key, value]) => {
+          stickerImg.style[key] = value;
+        });
+
+        const parentCol = galleryItem.parentNode;
+        let wrapper;
+        if (parentCol.classList.contains('sticker-wrapper')) {
+          wrapper = parentCol;
+        } else {
+          wrapper = document.createElement('div');
+          wrapper.className = 'sticker-wrapper position-relative';
+          parentCol.insertBefore(wrapper, galleryItem);
+          wrapper.appendChild(galleryItem);
+        }
+        wrapper.appendChild(stickerImg);
+      }
+    });
+
+  fetchState();
 });
-
-syncState();
 </script>
 </body>
 </html>
-
