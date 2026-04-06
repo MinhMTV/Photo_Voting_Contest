@@ -14,16 +14,16 @@
         @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
         .page{padding:88px 18px 34px;display:flex;justify-content:center}
         .frame{width:min(1120px,100%)} .stage,.stats-grid{display:grid;gap:24px}
-        .stage{grid-template-columns:1.1fr .9fr;margin-bottom:24px} .stats-grid{grid-template-columns:repeat(2,1fr)}
+        .stage{grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);margin-bottom:24px} .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
         .card{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:30px;background:var(--card);box-shadow:0 18px 60px rgba(0,0,0,.42);backdrop-filter:blur(16px)}
         .card::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,213,106,.08),transparent 30%,transparent 70%,rgba(255,213,106,.06));pointer-events:none}
         .hero{padding:34px}.kicker{display:inline-flex;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,213,106,.18);background:rgba(255,213,106,.08);color:var(--gold);font-size:.78rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:18px}
         h1{margin:0 0 14px;font-size:clamp(2.1rem,5vw,4.7rem);line-height:.92;color:#fffaf1}.sub{max-width:640px;margin-bottom:24px;color:#e7d6bd;font-size:1.02rem}
-        .row-pills,.chips,.facts,.bars,.hot-list,.radials,.mini-grid,.constellation-metrics{display:grid;gap:12px}
+        .row-pills,.chips,.facts,.bars,.mini-grid{display:grid;gap:12px}
         .row-pills{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:24px}
-        .pill,.fact,.metric,.hot-item,.count-card{padding:12px 14px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,213,106,.1)}
-        .pill{font-weight:700;color:#ffefc9}.wait-copy{font-size:1.12rem;color:#fff5dc}.wait-copy strong{color:var(--gold)}
-        .chips{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:26px}.chip{min-height:94px;padding:16px 18px;border-radius:22px;border:1px solid rgba(255,213,106,.18);background:linear-gradient(135deg,rgba(255,213,106,.12),rgba(183,24,43,.14));font-weight:800;color:#fff3cf;animation:floaty 4.8s ease-in-out infinite}
+        .pill,.fact,.metric,.count-card{padding:14px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,213,106,.1)}
+        .pill{font-weight:700;color:#ffefc9}.wait-copy{margin-top:2px;padding:18px 20px;border-radius:22px;background:rgba(10,7,9,.46);border:1px solid rgba(255,213,106,.12);font-size:1.06rem;line-height:1.7;color:#fff0d2}.wait-copy strong{color:var(--gold)}
+        .chips{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:26px}.chip{min-height:94px;padding:16px 18px;border-radius:22px;border:1px solid rgba(255,213,106,.18);background:linear-gradient(135deg,rgba(255,213,106,.12),rgba(183,24,43,.14));font-weight:600;line-height:1.5;color:#fff3cf;animation:floaty 4.8s ease-in-out infinite}
         .chip:nth-child(2){animation-delay:.7s}.chip:nth-child(3){animation-delay:1.4s}.chip:nth-child(4){animation-delay:2.1s}.chip:nth-child(5){animation-delay:2.8s}@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         .side{padding:24px;display:grid;gap:18px}.roulette{width:min(320px,100%);aspect-ratio:1;border-radius:50%;margin:0 auto;padding:18px;border:2px solid rgba(255,213,106,.24);box-shadow:0 0 0 10px rgba(255,213,106,.05),0 28px 50px rgba(0,0,0,.34);background:radial-gradient(circle,rgba(18,12,16,.9) 0 35%,transparent 36%),conic-gradient(#9d1020 0deg 18deg,#111 18deg 36deg,#d1a23e 36deg 54deg,#9d1020 54deg 72deg,#111 72deg 90deg,#d1a23e 90deg 108deg,#9d1020 108deg 126deg,#111 126deg 144deg,#d1a23e 144deg 162deg,#9d1020 162deg 180deg,#111 180deg 198deg,#d1a23e 198deg 216deg,#9d1020 216deg 234deg,#111 234deg 252deg,#d1a23e 252deg 270deg,#9d1020 270deg 288deg,#111 288deg 306deg,#d1a23e 306deg 324deg,#9d1020 324deg 342deg,#111 342deg 360deg);animation:spin 14s linear infinite}
         .roulette-core{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:50%;padding:24px;border:1px solid rgba(255,213,106,.16);background:radial-gradient(circle,#3a1720 0%,#150d12 64%);color:#ffe9b4;font-size:1.3rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
@@ -31,32 +31,21 @@
         .reveal{padding:18px;border-radius:24px;text-align:center;background:linear-gradient(135deg,rgba(255,213,106,.12),rgba(255,255,255,.04));border:1px solid rgba(255,213,106,.18)}
         .reveal small{display:block;margin-bottom:8px;color:#e6c98a;font-size:.78rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
         .reveal strong{display:block;font-size:clamp(1.8rem,4vw,3rem);line-height:1;color:#fff6dd}.reveal div{margin-top:6px;color:#cfb992;font-size:.92rem}
-        .count-grid,.mini-grid,.constellation-metrics{grid-template-columns:repeat(2,1fr)}
+        .count-grid,.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
         .count-card{text-align:center}.count-card strong{display:block;color:var(--gold);font-size:1.35rem}.count-card span{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:#d9c6a5}
         .stats{padding:24px}.title{margin-bottom:16px;color:var(--gold);font-size:.82rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
-        .bar-row{display:grid;grid-template-columns:minmax(130px,1.3fr) minmax(180px,3fr) auto;gap:12px;align-items:center}.bar-label{font-size:.92rem;font-weight:700;color:#f7e6c0}
+        .bar-row{display:grid;grid-template-columns:minmax(130px,1.3fr) minmax(180px,3fr) auto;gap:12px;align-items:center}.bar-label{font-size:.92rem;font-weight:700;color:#f7e6c0;line-height:1.35}
         .bar-track{height:14px;border-radius:999px;overflow:hidden;border:1px solid rgba(255,213,106,.08);background:rgba(255,255,255,.07)}
         .bar-fill{height:100%;min-width:42px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-radius:999px;background:linear-gradient(90deg,#ffd56a,#ff7b72);color:#28150d;font-size:.78rem;font-weight:900;box-shadow:0 0 18px rgba(255,213,106,.2)}
         .bar-value{min-width:38px;text-align:right;color:#ffefc8;font-weight:800}
-        .metric{position:relative;overflow:hidden}.metric::after{content:"";position:absolute;inset:-20% auto -20% -40%;width:42%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);animation:sweep 4.6s ease-in-out infinite}
+        .metric{position:relative;overflow:hidden;min-height:148px}.metric::after{content:"";position:absolute;inset:-20% auto -20% -40%;width:42%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);animation:sweep 4.6s ease-in-out infinite}
         @keyframes sweep{0%{left:-45%}60%,100%{left:120%}} .metric-kicker{margin-bottom:6px;color:#d3bb8e;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase}
         .metric-value{margin-bottom:6px;color:#fff6dd;font-size:1.8rem;font-weight:900;line-height:1}.metric-copy{color:#ead7b3;font-size:.88rem;line-height:1.45}
-        .radials{gap:14px}.radial-row{display:grid;grid-template-columns:92px 1fr;gap:14px;align-items:center}
-        .radial{--pct:0;width:92px;height:92px;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(255,213,106,.16);box-shadow:0 0 0 8px rgba(255,213,106,.03);background:radial-gradient(circle at center,rgba(18,12,16,.95) 0 54%,transparent 55%),conic-gradient(#ffd56a 0 calc(var(--pct) * 1%),rgba(255,255,255,.08) calc(var(--pct) * 1%) 100%)}
-        .radial span{color:#fff4d0;font-weight:900}.radial-copy{color:#ecd8b0;font-size:.92rem;line-height:1.5}
-        .hot-head,.hot-stack{display:grid;gap:10px}.hot-head{grid-template-columns:40px 1fr auto;align-items:center}.hot-rank{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,rgba(255,213,106,.22),rgba(255,123,114,.18));border:1px solid rgba(255,213,106,.18);font-weight:900;color:#fff4d2}
-        .hot-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:#fff3d1}.hot-total{font-weight:900;color:var(--gold)}.hot-stack{grid-template-columns:repeat(3,1fr)}
-        .hot-chip{padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,213,106,.08);text-align:center}.hot-chip strong{display:block;color:#fff6dd}.hot-chip span{font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:#dbc397}
-        .constellation{position:relative;min-height:180px;border-radius:24px;overflow:hidden;border:1px solid rgba(255,213,106,.1);background:radial-gradient(circle at 15% 25%,rgba(255,213,106,.16),transparent 18%),radial-gradient(circle at 70% 30%,rgba(255,123,114,.16),transparent 22%),radial-gradient(circle at 55% 70%,rgba(255,213,106,.12),transparent 20%),rgba(255,255,255,.03)}
-        .line{position:absolute;height:2px;transform-origin:left center;background:linear-gradient(90deg,rgba(255,213,106,.5),rgba(255,255,255,.06));opacity:.7}
-        .point{--size:16px;position:absolute;width:var(--size);height:var(--size);border-radius:50%;background:radial-gradient(circle,#fff3c1 0%,#ffd56a 45%,rgba(255,213,106,.24) 100%);box-shadow:0 0 18px rgba(255,213,106,.45);animation:point 4.5s ease-in-out infinite}
-        .point::after{content:attr(data-label);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);color:#f6e5be;font-size:.72rem;font-weight:800;white-space:nowrap;letter-spacing:.08em}
-        @keyframes point{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.08)}}
-        @media (max-width:980px){.stage,.stats-grid,.bar-row,.hot-stack{grid-template-columns:1fr}.page{padding-top:94px}}
+        @media (max-width:980px){.stage,.stats-grid,.bar-row,.mini-grid,.count-grid{grid-template-columns:1fr}.page{padding-top:94px}.hero,.side,.stats{padding:20px}.card{border-radius:24px}.wait-copy{padding:16px 16px}.chips{grid-template-columns:1fr}.metric{min-height:0}}
     </style>
 </head>
 <body>
-<div class="ticker"><div class="ticker-track"><span>{{ contest.title }}</span><span>Jackpot Reveal</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Hot Table Loading</span><span>{{ contest.title }}</span><span>Jackpot Reveal</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Hot Table Loading</span></div></div>
+<div class="ticker"><div class="ticker-track"><span>{{ contest.title }}</span><span>Jackpot Reveal</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Die Crowd wartet</span><span>{{ contest.title }}</span><span>Jackpot Reveal</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Die Crowd wartet</span></div></div>
 <div class="page">
     <div class="frame">
         <div class="stage">
@@ -120,21 +109,13 @@
 
             <section class="card"><div class="stats">
                 {% set voter_utilization = (((voter_count or 0) / (participant_count or 1)) * 100) if participant_count else 0 %}
-                <div class="title">Show-Mix</div>
-                <div class="radials">
-                    <div class="radial-row"><div class="radial" style="--pct: {{ ((total_chip_votes or 0) / total_activity * 100) if total_activity else 0 }};"><span>{{ (((total_chip_votes or 0) / total_activity * 100) if total_activity else 0) | round(0) }}%</span></div><div class="radial-copy"><strong>Chip-Aktion</strong><br>{{ total_chip_votes or 0 }} gesetzte Chips. Das ist der Anteil der klassischen "ich leg jetzt wirklich Jetons auf den Tisch"-Energie.</div></div>
-                    <div class="radial-row"><div class="radial" style="--pct: {{ ((duel_spin_count or 0) / total_activity * 100) if total_activity else 0 }};"><span>{{ (((duel_spin_count or 0) / total_activity * 100) if total_activity else 0) | round(0) }}%</span></div><div class="radial-copy"><strong>Duell-Modus</strong><br>{{ duel_spin_count or 0 }} Spins. Das ist der direkte "wir brauchen noch mehr Drama"-Anteil der Show.</div></div>
-                    <div class="radial-row"><div class="radial" style="--pct: {{ (total_reactions / total_activity * 100) if total_activity else 0 }};"><span>{{ ((total_reactions / total_activity * 100) if total_activity else 0) | round(0) }}%</span></div><div class="radial-copy"><strong>Kategorie-Chaos</strong><br>{{ total_reactions }} Reaktionen. Hier zeigt sich, wie viel Kommentar-Energie schon auf dem Kessel ist.</div></div>
-                </div>
-                <div class="mini-grid">
+                <div class="title">Crowd Overview</div>
+                <div class="mini-grid" style="margin-top:0;">
                     <div class="metric"><div class="metric-kicker">Aktivitaet gesamt</div><div class="metric-value" data-counter="{{ total_activity }}">{{ total_activity }}</div><div class="metric-copy">Alle Chips, Spins und Kategorie-Reaktionen zusammengerechnet.</div></div>
                     <div class="metric"><div class="metric-kicker">Voter-Auslastung</div><div class="metric-value" data-counter="{{ voter_utilization | round(0) }}">{{ voter_utilization | round(0) }}%</div><div class="metric-copy">Wie stark die Crowd im Verhaeltnis zu den Teilnehmenden schon mitmischt.</div></div>
+                    <div class="metric"><div class="metric-kicker">Chip pro Voter</div><div class="metric-value">{{ chips_per_voter }}</div><div class="metric-copy">Durchschnittliche Jeton-Dichte unter allen Leuten, die schon mitgemischt haben.</div></div>
+                    <div class="metric"><div class="metric-kicker">Reaktionen pro Voter</div><div class="metric-value">{{ reactions_per_voter }}</div><div class="metric-copy">So oft kommentiert die Crowd ihre Takes im Schnitt noch extra ueber Kategorien.</div></div>
                 </div>
-            </div></section>
-
-            <section class="card"><div class="stats">
-                <div class="title">Hot Table</div>
-                <div class="hot-list">{% for item in hottest_images %}<div class="hot-item"><div class="hot-head"><span class="hot-rank">#{{ item.rank }}</span><div class="hot-name">{{ item.label }}</div><div class="hot-total">{{ item.total }}</div></div><div class="hot-stack"><div class="hot-chip"><strong>{{ item.vote_count }}</strong><span>Chips</span></div><div class="hot-chip"><strong>{{ item.reaction_count }}</strong><span>Kategorien</span></div><div class="hot-chip"><strong>{{ item.duel_count }}</strong><span>Duelle</span></div></div></div>{% endfor %}{% if not hottest_images %}<div class="text-secondary small">Noch kein Bild ist heiss gelaufen.</div>{% endif %}</div>
             </div></section>
 
             <section class="card"><div class="stats">
@@ -149,23 +130,6 @@
                 </div>
             </div></section>
 
-            <section class="card"><div class="stats">
-                <div class="title">Data Constellation</div>
-                <div class="constellation">
-                    <div class="line" style="left:18%; top:28%; width:26%; transform:rotate(10deg);"></div>
-                    <div class="line" style="left:42%; top:31%; width:24%; transform:rotate(-18deg);"></div>
-                    <div class="line" style="left:33%; top:56%; width:31%; transform:rotate(7deg);"></div>
-                    <div class="point" data-label="Crowd" style="left:14%; top:22%; --size: {{ 14 + ((voter_count or 0) % 10) }}px; animation-delay:.2s;"></div>
-                    <div class="point" data-label="Chips" style="left:40%; top:30%; --size: {{ 14 + ((total_chip_votes or 0) % 16) }}px; animation-delay:1s;"></div>
-                    <div class="point" data-label="Kategorien" style="left:64%; top:22%; --size: {{ 14 + ((total_reactions or 0) % 16) }}px; animation-delay:1.8s;"></div>
-                    <div class="point" data-label="Duelle" style="left:32%; top:58%; --size: {{ 14 + ((duel_spin_count or 0) % 16) }}px; animation-delay:2.4s;"></div>
-                    <div class="point" data-label="Reveal" style="left:60%; top:54%; --size: 20px; animation-delay:3.1s;"></div>
-                </div>
-                <div class="constellation-metrics">
-                    <div class="metric"><div class="metric-kicker">Chip pro Voter</div><div class="metric-value">{{ chips_per_voter }}</div><div class="metric-copy">Durchschnittliche Jeton-Dichte unter allen Leuten, die schon mitgemischt haben.</div></div>
-                    <div class="metric"><div class="metric-kicker">Reaktionen pro Voter</div><div class="metric-value">{{ reactions_per_voter }}</div><div class="metric-copy">So oft kommentiert die Crowd ihre Takes im Schnitt noch extra ueber Kategorien.</div></div>
-                </div>
-            </div></section>
         </div>
     </div>
 </div>
