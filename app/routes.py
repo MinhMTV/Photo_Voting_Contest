@@ -928,6 +928,33 @@ def _format_file_size(size: int) -> str:
     return f"{value:.1f} {unit}"
 
 
+def project_file_shortcuts() -> list[dict]:
+    shortcuts: list[dict] = []
+    candidates = [
+        ("Projekt", ""),
+        ("App", "app"),
+        ("Themes", "app/templates/themes"),
+        ("Static", "app/static"),
+        ("Uploads", "app/static"),
+        ("Instance", "instance"),
+        ("Backups", "backups"),
+    ]
+    seen = set()
+    for label, rel in candidates:
+        try:
+            abs_path = resolve_project_path(rel)
+        except ValueError:
+            continue
+        if not os.path.exists(abs_path):
+            continue
+        key = project_relpath(abs_path)
+        if key in seen:
+            continue
+        seen.add(key)
+        shortcuts.append({"label": label, "path": key})
+    return shortcuts
+
+
 GOOGLE_DRIVE_BACKUP_FOLDER_NAME = "Photo Voting Contest Backups"
 GOOGLE_DRIVE_SCOPES = [
     "openid",
@@ -2510,6 +2537,7 @@ def admin_files():
         parent_path=parent_path,
         breadcrumbs=breadcrumbs,
         entries=entries,
+        shortcuts=project_file_shortcuts(),
     )
 
 

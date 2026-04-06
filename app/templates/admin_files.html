@@ -24,6 +24,13 @@
   <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
     <div>
       <div class="section-title mb-2">Aktueller Ordner</div>
+      {% if shortcuts %}
+      <div class="crumbs mb-2">
+        {% for shortcut in shortcuts %}
+          <a href="{{ url_for('main.admin_files', path=shortcut.path or None) }}" class="btn btn-sm btn-outline-dark">{{ shortcut.label }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
       <div class="crumbs mb-2">
         {% for crumb in breadcrumbs %}
           <a href="{{ url_for('main.admin_files', path=crumb.path or None) }}" class="btn btn-sm {% if loop.last %}btn-primary{% else %}btn-outline-primary{% endif %}">{{ crumb.label }}</a>
