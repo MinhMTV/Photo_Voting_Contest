@@ -1976,12 +1976,80 @@ def _render_public_waiting(year: int):
         "SELECT COUNT(*) FROM images WHERE contest_id = ? AND visible = 1",
         (year,),
     ).fetchone()[0]
+    category_count = db.execute(
+        "SELECT COUNT(*) FROM contest_reaction_options WHERE contest_id = ? AND active = 1",
+        (year,),
+    ).fetchone()[0]
+    voter_count = db.execute(
+        "SELECT COUNT(DISTINCT voter_session_id) FROM votes WHERE contest_id = ?",
+        (year,),
+    ).fetchone()[0]
+    total_chip_votes = db.execute(
+        "SELECT COUNT(*) FROM votes WHERE contest_id = ?",
+        (year,),
+    ).fetchone()[0]
+    duel_spin_count = db.execute(
+        "SELECT COUNT(*) FROM duel_votes WHERE contest_id = ?",
+        (year,),
+    ).fetchone()[0]
+    reaction_rows = db.execute(
+        """
+        SELECT reaction_type, COUNT(*) AS count
+        FROM reactions
+        WHERE contest_id = ?
+        GROUP BY reaction_type
+        ORDER BY count DESC, reaction_type ASC
+        """,
+        (year,),
+    ).fetchall()
+    reaction_map = {str(row["reaction_type"] or "").strip().lower(): int(row["count"] or 0) for row in reaction_rows}
+    reaction_stats = []
+    for option in get_reaction_options(year):
+        key = str(option.get("reaction_key") or "").strip().lower()
+        reaction_stats.append(
+            {
+                "key": key,
+                "label": option.get("label") or key,
+                "count": reaction_map.get(key, 0),
+            }
+        )
+    reaction_stats.sort(key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
+
+    vote_rows = db.execute(
+        """
+        SELECT vote_option_key, COUNT(*) AS count
+        FROM votes
+        WHERE contest_id = ?
+        GROUP BY vote_option_key
+        ORDER BY count DESC, vote_option_key ASC
+        """,
+        (year,),
+    ).fetchall()
+    vote_map = {str(row["vote_option_key"] or "").strip().lower(): int(row["count"] or 0) for row in vote_rows}
+    vote_stats = []
+    for option in get_vote_options(year):
+        key = str(option.get("opt_key") or "").strip().lower()
+        vote_stats.append(
+            {
+                "key": key,
+                "label": option.get("label") or key,
+                "count": vote_map.get(key, 0),
+            }
+        )
+    vote_stats.sort(key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
     return render_template(
         themed_template("public_waiting", contest),
         year=year,
         contest=contest,
         waiting_text=waiting_text_for_year(year),
         participant_count=participant_count,
+        category_count=category_count,
+        voter_count=voter_count,
+        total_chip_votes=total_chip_votes,
+        duel_spin_count=duel_spin_count,
+        duel_image_slots=duel_spin_count * 3,
+        reaction_stats=reaction_stats,
+        vote_stats=vote_stats,
         reveal_at_iso=str(contest.get("end_at") or "").strip(),
     )
 
