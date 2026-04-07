@@ -1893,10 +1893,6 @@ def _render_contest_view(year: int):
         return redirect(url_for("main.root"))
     preview = (request.args.get("theme_preview") or "").strip()
     force_vote_preview = bool(session.get("admin")) and (bool(preview) or request.args.get("preview") == "1")
-    if year != current_year() and not force_vote_preview:
-        if preview:
-            return redirect(url_for("main.public_results_year", year=year, theme_preview=preview))
-        return redirect(url_for("main.public_results_year", year=year))
 
     db = get_db()
     images = db.execute("SELECT * FROM images WHERE visible = 1 AND contest_id = ? ORDER BY uploaded_at DESC", (year,)).fetchall()
