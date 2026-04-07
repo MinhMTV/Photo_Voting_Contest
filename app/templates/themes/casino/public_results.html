@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ contest.title }} – Ergebnisse</title>
+  <title>{{ contest.title }} &ndash; Ergebnisse</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     html, body { margin: 0; padding: 0; }
@@ -274,9 +274,9 @@
 <div id="winner-stickers"></div>
 <div id="global-party"></div>
 <div class="shell">
-  <h1 class="text-center mb-3">🎰 {{ contest.title }} · Ergebnisse {{ contest_display_year(contest) }}</h1>
+  <h1 class="text-center mb-3">{{ contest.title }} &middot; Ergebnisse {{ contest_display_year(contest) }}</h1>
   <div class="d-flex justify-content-center gap-2 flex-wrap mb-3" id="modeButtons">
-    <button type="button" class="btn btn-warning btn-sm mode-btn active" data-mode="main">Main Event</button>
+    <button type="button" class="btn btn-warning btn-sm mode-btn active" data-mode="main">Gesamtwertung</button>
     {% for reaction in reaction_options %}
     <button type="button" class="btn btn-outline-warning btn-sm mode-btn" data-mode="{{ reaction.reaction_key }}">{{ reaction.label }}</button>
     {% endfor %}
@@ -302,7 +302,7 @@
           </div>
         </div>
         <div class="mt-3">
-          <div class="badge text-bg-dark border border-warning-subtle">Nächster Platz: <span id="nextPlace">5</span></div>
+          <div class="badge text-bg-dark border border-warning-subtle">N&auml;chster Platz: <span id="nextPlace">5</span></div>
         </div>
         <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
           <button id="spinBtn" class="btn btn-warning">Kugel setzen</button>
@@ -311,7 +311,7 @@
       </div>
       <div class="col-12 col-lg-5 d-flex flex-column justify-content-start">
         <div class="slot mb-2" id="numberLegend">
-          <div class="fw-semibold mb-2">🎯 Zahlen-Legende</div>
+          <div class="fw-semibold mb-2">Zahlen-Legende</div>
           <div class="legend-list" id="legendList"></div>
         </div>
         <div class="slot" id="revealList">
@@ -322,11 +322,11 @@
   </div>
 
   <div id="top10Section" class="mt-4 d-none">
-    <h3 class="mb-3" id="top10Title">🏁 Gesamtübersicht Top 10</h3>
+    <h3 class="mb-3" id="top10Title">Gesamt&uuml;bersicht Top 10</h3>
     <div class="row g-3" id="top10Grid"></div>
   </div>
   <div id="participantsSection" class="mt-4 d-none">
-    <h3 class="mb-3">🎭 Alle Teilnehmenden</h3>
+    <h3 class="mb-3">Alle Teilnehmenden</h3>
     <div class="row g-3" id="participantsGrid"></div>
   </div>
 </div>
@@ -336,7 +336,7 @@
     <div class="modal-content bg-dark text-light border-warning">
       <div class="modal-header">
         <h5 class="modal-title" id="winnerTitle">Platzierung</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schlie&szlig;en"></button>
       </div>
       <div class="modal-body reveal-card" id="winnerBody"></div>
     </div>
@@ -352,7 +352,7 @@ const reactionOptions = {{ reaction_options|tojson }};
 const resultSets = {
   main: {
     key: 'main',
-    label: 'Main Event',
+    label: 'Gesamtwertung',
     rows: rankingImages || [],
     metricLabel: 'Gesamtpunkte',
     metricValue: (item) => Number(item.weighted_score || 0),
@@ -431,7 +431,7 @@ function assignNumbers() {
 function colorForIndex(i) {
   const p = participants[i];
   const n = p ? participantNumberById.get(Number(p.id)) : null;
-  if (n === 0) return '#1f8d3f'; // 0 immer grün
+  if (n === 0) return '#1f8d3f'; // 0 immer gruen
   return i % 2 === 0 ? '#111' : '#ba2323';
 }
 
@@ -463,7 +463,7 @@ function buildLegend() {
   legendList.innerHTML = '';
   const rows = participants.map(p => ({
     id: Number(p.id),
-    name: p.uploader || 'Anonymous',
+    name: p.uploader || 'Anonym',
     n: participantNumberById.get(Number(p.id)) || 0
   })).sort((a,b) => a.n - b.n);
 
@@ -533,10 +533,10 @@ function animateBallToIndex(targetIndex, wheelAngleDeg, durationMs) {
     const start = performance.now();
     const laps = 9;
     const baseTarget = angleForIndex(targetIndex);
-    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation berücksichtigen
+    // Nummern sitzen auf dem (mitdrehenden) Wheel -> Kugelziel muss Wheel-Rotation beruecksichtigen
     const targetAngle = normalizeDeg(baseTarget + normalizeDeg(wheelAngleDeg));
     const size = document.getElementById('roulette').clientWidth;
-    const startRadius = size * 0.44; // startet im grauen Außenbereich
+    const startRadius = size * 0.44; // startet im grauen Aussenbereich
     const endRadius = size * 0.25;   // landet auf inneren Feldern
 
     function frame(now) {
@@ -565,7 +565,7 @@ function appendReveal(place, item) {
   const el = document.createElement('div');
   el.className = 'mb-2 p-2 rounded border border-warning-subtle bg-black';
   const n = participantNumberById.get(Number(item.id)) || '-';
-  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonymous'} | ${currentSet.metricLabel} ${currentSet.metricValue(item)}`;
+  el.innerHTML = `<strong>Platz ${place}:</strong> #${n} ${item.uploader || 'Anonym'} | ${currentSet.metricLabel} ${currentSet.metricValue(item)}`;
   el.style.cursor = 'pointer';
   el.addEventListener('click', () => openParticipantDetails(item.id));
   revealList.appendChild(el);
@@ -621,7 +621,7 @@ function detailHtmlForItem(item) {
     return `<li>${reaction.label}: ${count} | ${points} Punkte</li>`;
   }).join('');
   return `
-    <div class="win-meta">🪙 ${currentSet.metricLabel}: ${currentSet.metricValue(item)}</div>
+    <div class="win-meta">${currentSet.metricLabel}: ${currentSet.metricValue(item)}</div>
     <div class="win-desc">Stimmen: ${Number(item.vote_count || 0)} | Vote-Punkte: ${Number(item.vote_points || 0)} | Duell-Punkte: ${Number(item.duel_points || 0)} | Kategoriepunkte: ${Number(item.reaction_points_total || 0)} | Gesamt: ${Number(item.weighted_score || 0)}</div>
     <div class="detail-grid">
       <div class="detail-box">
@@ -643,10 +643,10 @@ function openParticipantDetails(imageId) {
   const item = participants.find((entry) => Number(entry.id) === Number(imageId)) || rankingImages.find((entry) => Number(entry.id) === Number(imageId));
   if (!item) return;
   const n = participantNumberById.get(Number(item.id)) || '-';
-  document.getElementById('winnerTitle').textContent = `${item.uploader || 'Anonymous'} | Details`;
+  document.getElementById('winnerTitle').textContent = `${item.uploader || 'Anonym'} | Details`;
   document.getElementById('winnerBody').innerHTML = `
     <img src="/media/{{ year }}/${item.filename}" alt="participant">
-    <div class="win-name">#${n} ${item.uploader || 'Anonymous'}</div>
+    <div class="win-name">#${n} ${item.uploader || 'Anonym'}</div>
     ${detailHtmlForItem(item)}`;
   winnerModal.show();
 }
@@ -654,16 +654,16 @@ function openParticipantDetails(imageId) {
 function renderTop10() {
   const currentSet = resultSets[activeMode];
   const rows = (currentSet.rows || []).filter(item => item && item.filename).slice(0, 10);
-  top10Title.textContent = '🏁 Top 10';
+  top10Title.textContent = 'Top 10';
   top10Grid.innerHTML = '';
   rows.forEach((item, index) => {
     const col = document.createElement('div');
     col.className = 'col-6 col-md-4 col-lg-3';
     col.innerHTML = `
       <div class="card bg-dark text-light border-warning-subtle h-100 participant-card">
-        <img src="/media/{{ year }}/${item.filename}" class="card-img-top" style="height:140px;object-fit:cover" alt="${item.uploader || 'Anonymous'}">
+        <img src="/media/{{ year }}/${item.filename}" class="card-img-top" style="height:140px;object-fit:cover" alt="${item.uploader || 'Anonym'}">
         <div class="card-body p-2">
-          <div class="small">#${index + 1} | <strong>${item.uploader || 'Anonymous'}</strong></div>
+          <div class="small">#${index + 1} | <strong>${item.uploader || 'Anonym'}</strong></div>
           <div class="small text-warning">${currentSet.metricLabel}: ${currentSet.metricValue(item)}</div>
           <div class="small text-secondary">${currentSet.metaLabel(item)}</div>
         </div>
@@ -680,9 +680,9 @@ function renderParticipantsGrid() {
     col.className = 'col-6 col-md-4 col-lg-3';
     col.innerHTML = `
       <div class="card bg-dark text-light border-warning-subtle h-100 participant-card">
-        <img src="/media/{{ year }}/${item.filename}" class="card-img-top" style="height:140px;object-fit:cover" alt="${item.uploader || 'Anonymous'}">
+        <img src="/media/{{ year }}/${item.filename}" class="card-img-top" style="height:140px;object-fit:cover" alt="${item.uploader || 'Anonym'}">
         <div class="card-body p-2">
-          <div class="small"><strong>${item.uploader || 'Anonymous'}</strong></div>
+          <div class="small"><strong>${item.uploader || 'Anonym'}</strong></div>
           <div class="small text-warning">${resultSets[activeMode].metricLabel}: ${resultSets[activeMode].metricValue(item)}</div>
           <div class="small text-secondary">${resultSets[activeMode].metaLabel(item)}</div>
         </div>
@@ -703,7 +703,7 @@ function resetModeState() {
   revealList.innerHTML = '<div class="text-muted">Noch keine Platzierungen aufgedeckt.</div>';
   top10Section.classList.add('d-none');
   participantsSection.classList.add('d-none');
-  nextPlace.textContent = step > 0 ? String(step) : '–';
+  nextPlace.textContent = step > 0 ? String(step) : '-';
   assignNumbers();
   applyWheelColors();
   buildThumbs();
@@ -851,7 +851,7 @@ btn.addEventListener('click', async () => {
   appendReveal(step, item);
 
   const n = participantNumberById.get(Number(item.id)) || '-';
-  document.getElementById('winnerTitle').textContent = `🎉 Platz ${step}`;
+  document.getElementById('winnerTitle').textContent = `Platz ${step}`;
   document.getElementById('winnerBody').innerHTML = `
     <div class="party-wrap">
       <div class="party-beam"></div>
@@ -859,8 +859,8 @@ btn.addEventListener('click', async () => {
       <div class="party-beam b3"></div>
     </div>
     <img src="/media/{{ year }}/${item.filename}" alt="winner">
-    <div class="win-name">#${n} ${item.uploader || 'Anonymous'}</div>
-    <div class="win-meta">🪙 ${currentSet.metricLabel}: ${currentSet.metricValue(item)}</div>
+    <div class="win-name">#${n} ${item.uploader || 'Anonym'}</div>
+    <div class="win-meta">${currentSet.metricLabel}: ${currentSet.metricValue(item)}</div>
     <div class="win-desc">${currentSet.metaLabel(item)}</div>`;
   casinoCelebrate();
   winnerModal.show();

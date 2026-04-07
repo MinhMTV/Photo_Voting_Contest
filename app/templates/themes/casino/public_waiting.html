@@ -47,31 +47,31 @@
     </style>
 </head>
 <body>
-<div class="ticker"><div class="ticker-track"><span>{{ contest.title }}</span><span>Jackpot Reveal</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Die Crowd wartet</span><span>{{ contest.title }}</span><span>Jackpot Reveal</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Die Crowd wartet</span></div></div>
+<div class="ticker"><div class="ticker-track"><span>{{ contest.title }}</span><span>Jackpot-Enth&uuml;llung</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Das Publikum wartet</span><span>{{ contest.title }}</span><span>Jackpot-Enth&uuml;llung</span><span>Die Chips liegen</span><span>Die Spannung steigt</span><span>Das Publikum wartet</span></div></div>
 <div class="page">
     <div class="frame">
         <div class="stage">
             <section class="card"><div class="hero">
-                <div class="kicker">Casino Floor Closed</div>
+                <div class="kicker">Casino geschlossen</div>
                 <h1>Die Tische sind<br>geschlossen.</h1>
-                <p class="sub">{{ contest.title }} laeuft gerade in Richtung grosses Reveal. Die Jetons sind gesetzt, das Publikum raunt schon und das Finale wird erst nach offizieller Freigabe geoeffnet.</p>
+                <p class="sub">{{ contest.title }} l&auml;uft gerade auf die gro&szlig;e Enth&uuml;llung zu. Die Jetons sind gesetzt, das Publikum raunt schon, und das Finale wird erst nach offizieller Freigabe ge&ouml;ffnet.</p>
                 <div class="row-pills">
                     <div class="pill">{{ participant_count or 0 }} Teilnehmende am Start</div>
                     {% if contest_start_date(contest) %}<div class="pill">Seit {{ contest_start_date(contest) }} im Spiel</div>{% endif %}
                     <div class="pill">{{ category_count or 0 }} Kategorien warten aufs Chaos</div>
                 </div>
-                <div class="wait-copy"><strong>Naechster Programmpunkt:</strong><br>{{ waiting_text or 'Die Abstimmung laeuft noch. Ergebnisse werden nach Freigabe veroeffentlicht.' }}</div>
+                <div class="wait-copy"><strong>N&auml;chster Programmpunkt:</strong><br>{{ waiting_text or 'Die Abstimmung l&auml;uft noch. Ergebnisse werden nach Freigabe ver&ouml;ffentlicht.' }}</div>
                 <div class="chips">
-                    <div class="chip">5 Chips: fair, hoeflich, noch halbwegs gesellschaftsfaehig.</div>
+                    <div class="chip">5 Chips: fair, h&ouml;flich, noch halbwegs gesellschaftsf&auml;hig.</div>
                     <div class="chip">25 Chips: jetzt wird aus "ganz nett" langsam eine Agenda.</div>
                     <div class="chip">50 Chips: ab hier diskutiert man das Kostuem schon mit Nachdruck.</div>
                     <div class="chip">100 Chips: das ist keine Stimme mehr, das ist ein Feldzug.</div>
-                    <div class="chip">All-in: komplette Eskalation mit Anlauf und ohne Restwuerde.</div>
+                    <div class="chip">All-in: komplette Eskalation mit Anlauf und ohne Restw&uuml;rde.</div>
                 </div>
             </div></section>
             <aside class="card"><div class="side">
                 <div class="roulette"><div class="roulette-core">Reveal<br>steht<br>am Tisch</div></div>
-                <div class="reveal"><small>Reveal startet in</small><strong id="countdownValue">--:--:--</strong><div id="revealSubline">Sobald die Uhr ablaeuft, oeffnet das Haus die Ergebnisse.</div></div>
+                <div class="reveal"><small>Enth&uuml;llung startet in</small><strong id="countdownValue">--:--:--</strong><div id="revealSubline">Sobald die Uhr abl&auml;uft, &ouml;ffnet das Haus die Ergebnisse.</div></div>
                 <div class="count-grid">
                     <div class="count-card"><strong>{{ participant_count or 0 }}</strong><span>Teilnehmende</span></div>
                     <div class="count-card"><strong>{{ category_count or 0 }}</strong><span>Kategorien</span></div>
@@ -80,12 +80,12 @@
                 </div>
                 <div class="facts">
                     <div class="fact"><strong>{{ total_chip_votes or 0 }} gesetzte Chips</strong> liegen schon auf dem Filz.</div>
-                    <div class="fact"><strong>{{ duel_spin_count or 0 }} Duell-Spins</strong> wurden bisher wirklich gedrueckt.</div>
-                    <div class="fact"><strong>{{ (voter_count or 0) * 10 }}</strong> waere die theoretische Zahl an Duell-Spins, wenn jede bisherige Voting-Person alle 10 durchzieht.</div>
+                    <div class="fact"><strong>{{ duel_spin_count or 0 }} Duell-Spins</strong> wurden bisher wirklich gedr&uuml;ckt.</div>
+                    <div class="fact"><strong>{{ (voter_count or 0) * 10 }}</strong> w&auml;re die theoretische Zahl an Duell-Spins, wenn jede bisherige abstimmende Person alle 10 durchzieht.</div>
                 </div>
                 <div class="fact">
                     <dotlottie-player src="https://lottie.host/3b3c47df-febd-4c20-b96a-514c0b5cb644/xPWGFvjWYT.lottie" background="transparent" speed="1" style="width:120px;height:120px;margin:0 auto 8px;display:block;" loop autoplay></dotlottie-player>
-                    Das Haus bittet noch um Geduld. Sobald die Ergebnisse offiziell freigeschaltet werden, geht hier aus Warten sofort eine Showbuehne auf.
+                    Das Haus bittet noch um Geduld. Sobald die Ergebnisse offiziell freigeschaltet werden, geht hier aus Warten sofort eine Showb&uuml;hne auf.
                 </div>
             </div></aside>
         </div>
@@ -95,7 +95,7 @@
                 <div class="title">Kategorien im Publikum</div>
                 <div class="bars">{% set max_reaction_count = (reaction_stats | map(attribute='count') | max) if reaction_stats else 0 %}{% for item in reaction_stats[:6] %}<div class="bar-row"><div class="bar-label">{{ item.label }}</div><div class="bar-track"><div class="bar-fill" style="width: {{ (item.count / max_reaction_count * 100) if max_reaction_count else 0 }}%;">{{ item.count }}</div></div><div class="bar-value">{{ item.count }}</div></div>{% endfor %}{% if not reaction_stats %}<div class="text-secondary small">Noch keine Kategorien-Reaktionen gesetzt.</div>{% endif %}</div>
                 <div class="mini-grid">
-                    <div class="metric"><div class="metric-kicker">Beliebteste Kategorie</div><div class="metric-value" data-counter="{{ reaction_stats[0].count if reaction_stats else 0 }}">{{ reaction_stats[0].count if reaction_stats else 0 }}</div><div class="metric-copy">{% if reaction_stats %}{{ top_reaction_label }} fuehrt gerade das Chaos-Ranking an.{% else %}Noch ist bei den Kategorien alles ruhig.{% endif %}</div></div>
+                    <div class="metric"><div class="metric-kicker">Beliebteste Kategorie</div><div class="metric-value" data-counter="{{ reaction_stats[0].count if reaction_stats else 0 }}">{{ reaction_stats[0].count if reaction_stats else 0 }}</div><div class="metric-copy">{% if reaction_stats %}{{ top_reaction_label }} f&uuml;hrt gerade das Chaos-Ranking an.{% else %}Noch ist bei den Kategorien alles ruhig.{% endif %}</div></div>
                     <div class="metric"><div class="metric-kicker">Reaktionen gesamt</div><div class="metric-value" data-counter="{{ total_reactions }}">{{ total_reactions }}</div><div class="metric-copy">So oft wurde schon per Kategorie kommentiert statt nur Chips zu werfen.</div></div>
                 </div>
             </div></section>
@@ -105,26 +105,26 @@
                 <div class="bars">{% set max_vote_count = (vote_stats | map(attribute='count') | max) if vote_stats else 0 %}{% for item in vote_stats[:6] %}<div class="bar-row"><div class="bar-label">{{ item.label }}</div><div class="bar-track"><div class="bar-fill" style="width: {{ (item.count / max_vote_count * 100) if max_vote_count else 0 }}%;">{{ item.count }}</div></div><div class="bar-value">{{ item.count }}</div></div>{% endfor %}{% if not vote_stats %}<div class="text-secondary small">Noch keine Chips gesetzt.</div>{% endif %}</div>
                 <div class="mini-grid">
                     <div class="metric"><div class="metric-kicker">Beliebtester Chip</div><div class="metric-value">{{ top_vote_label }}</div><div class="metric-copy">{% if vote_stats %}{{ vote_stats[0].count }} Mal gesetzt und damit gerade der klare Lieblingschip.{% else %}Noch liegt kein Chip auf dem Tisch.{% endif %}</div></div>
-                    <div class="metric"><div class="metric-kicker">Bildslots im Duell</div><div class="metric-value" data-counter="{{ duel_image_slots or 0 }}">{{ duel_image_slots or 0 }}</div><div class="metric-copy">So viele Bildanzeigen wurden ueber das Duell bisher wirklich ausgespielt.</div></div>
+                    <div class="metric"><div class="metric-kicker">Bildslots im Duell</div><div class="metric-value" data-counter="{{ duel_image_slots or 0 }}">{{ duel_image_slots or 0 }}</div><div class="metric-copy">So viele Bildanzeigen wurden &uuml;ber das Duell bisher wirklich ausgespielt.</div></div>
                 </div>
             </div></section>
 
             <section class="card"><div class="stats">
                 {% set voter_utilization = (((voter_count or 0) / (participant_count or 1)) * 100) if participant_count else 0 %}
-                <div class="title">Crowd Overview</div>
+                <div class="title">Publikums&uuml;bersicht</div>
                 <div class="mini-grid" style="margin-top:0;">
-                    <div class="metric"><div class="metric-kicker">Aktivitaet gesamt</div><div class="metric-value" data-counter="{{ total_activity }}">{{ total_activity }}</div><div class="metric-copy">Alle Chips, Spins und Kategorie-Reaktionen zusammengerechnet.</div></div>
-                    <div class="metric"><div class="metric-kicker">Voter-Auslastung</div><div class="metric-value" data-counter="{{ voter_utilization | round(0) }}">{{ voter_utilization | round(0) }}%</div><div class="metric-copy">Wie stark die Crowd im Verhaeltnis zu den Teilnehmenden schon mitmischt.</div></div>
+                    <div class="metric"><div class="metric-kicker">Aktivit&auml;t gesamt</div><div class="metric-value" data-counter="{{ total_activity }}">{{ total_activity }}</div><div class="metric-copy">Alle Chips, Spins und Kategorie-Reaktionen zusammengerechnet.</div></div>
+                    <div class="metric"><div class="metric-kicker">Abstimmungsquote</div><div class="metric-value" data-counter="{{ voter_utilization | round(0) }}">{{ voter_utilization | round(0) }}%</div><div class="metric-copy">Wie stark das Publikum im Verh&auml;ltnis zu den Teilnehmenden schon mitmischt.</div></div>
                     <div class="metric"><div class="metric-kicker">Chip pro Voter</div><div class="metric-value">{{ chips_per_voter }}</div><div class="metric-copy">Durchschnittliche Jeton-Dichte unter allen Leuten, die schon mitgemischt haben.</div></div>
-                    <div class="metric"><div class="metric-kicker">Reaktionen pro Voter</div><div class="metric-value">{{ reactions_per_voter }}</div><div class="metric-copy">So oft kommentiert die Crowd ihre Takes im Schnitt noch extra ueber Kategorien.</div></div>
+                    <div class="metric"><div class="metric-kicker">Reaktionen pro Person</div><div class="metric-value">{{ reactions_per_voter }}</div><div class="metric-copy">So oft kommentiert das Publikum seine Reaktionen im Schnitt noch extra &uuml;ber Kategorien.</div></div>
                 </div>
             </div></section>
 
             <section class="card"><div class="stats">
-                <div class="title">Crowd Profile</div>
+                <div class="title">Publikumsprofil</div>
                 <div class="mini-grid">
                     <div class="metric"><div class="metric-kicker">Aktionen pro Voter</div><div class="metric-value">{{ actions_per_voter }}</div><div class="metric-copy">Wie viel eine abstimmende Person im Schnitt schon produziert hat.</div></div>
-                    <div class="metric"><div class="metric-kicker">High-Roller-Anteil</div><div class="metric-value">{{ high_roller_share }}%</div><div class="metric-copy">So gross ist gerade der Anteil der schweren Chips ab 50 oder All-in.</div></div>
+                    <div class="metric"><div class="metric-kicker">High-Roller-Anteil</div><div class="metric-value">{{ high_roller_share }}%</div><div class="metric-copy">So gro&szlig; ist gerade der Anteil der schweren Chips ab 50 oder All-in.</div></div>
                     <div class="metric"><div class="metric-kicker">Chips pro Bild</div><div class="metric-value">{{ ((total_chip_votes or 0) / (participant_count or 1)) | round(1) if participant_count else 0 }}</div><div class="metric-copy">Wie viele klassische Votes im Schnitt auf ein teilnehmendes Bild kommen.</div></div>
                     <div class="metric"><div class="metric-kicker">Reaktionen pro Bild</div><div class="metric-value">{{ ((total_reactions or 0) / (participant_count or 1)) | round(1) if participant_count else 0 }}</div><div class="metric-copy">Wie viele Kategorie-Reaktionen durchschnittlich pro Bild schon vergeben wurden.</div></div>
                     <div class="metric"><div class="metric-kicker">Reaktionen pro Kategorie</div><div class="metric-value">{{ ((total_reactions or 0) / (category_count or 1)) | round(1) if category_count else 0 }}</div><div class="metric-copy">Wie stark die vorhandenen Kategorien im Schnitt schon benutzt wurden.</div></div>
